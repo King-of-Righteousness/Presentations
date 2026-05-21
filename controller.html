@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Global Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; outline: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body {
+        zoom: 75%; 
+        width: 133.33vw !important;
+        height: 133.33vh !important;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+    }
+        
+        /* --- THEME VARIABLES --- */
+        :root {
+            /* DARK MODE (DEFAULT) */
+            --bg-gradient: radial-gradient(circle at top left, #1e293b 0%, #020617 100%);
+            --app-bg: rgba(15, 23, 42, 0.65); /* Glass Container */
+            --text-color: #f8fafc;
+            --header-bg: rgba(30, 41, 59, 0.4);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --app-border: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(0,0,0,0.2);
+            --accent: #3b82f6;
+            --muted: #94a3b8;
+            --shadow-color: rgba(0,0,0,0.5);
+            --success: #4ade80; /* Green for Passcode */
+            --error: #f87171; /* Red for Offline */
+        }
+
+        /* LIGHT MODE OVERRIDES */
+        body.light-mode {
+            --bg-gradient: radial-gradient(circle at top left, #e2e8f0 0%, #cbd5e1 100%);
+            --app-bg: rgba(255, 255, 255, 0.65);
+            --text-color: #1e293b;
+            --header-bg: rgba(255, 255, 255, 0.4);
+            --card-bg: rgba(255, 255, 255, 0.4);
+            --card-border: rgba(255, 255, 255, 0.4);
+            --app-border: rgba(255, 255, 255, 0.6);
+            --input-bg: rgba(0,0,0,0.05);
+            --accent: #2563eb;
+            --muted: #64748b;
+            --shadow-color: rgba(0,0,0,0.1);
+        }
+
+body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-color);
+            margin: 0;
+            height: 100vh;
+            height: 100dvh;
+            /* NEW: Centers the app on the screen */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px; 
+            overflow: hidden;
+            transition: color 0.3s;
+        }
+
+        /* --- THE GLASS BOX (APP CONTAINER) --- */
+        #app-frame {
+            width: 100%;
+            height: 100%;
+            /* NEW: Constraints for a professional floating look */
+            max-width: 480px; 
+            max-height: 850px; 
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--app-border);
+            
+            background: var(--app-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        header {
+            padding: 20px 24px;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--card-border);
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
+        }
+        h1 { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-color); letter-spacing: -0.5px; }
+        
+        .header-controls { display: flex; gap: 16px; align-items: center; }
+        .theme-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0; opacity: 0.8; transition: opacity 0.2s; filter: grayscale(100%); }
+        .theme-btn:hover { opacity: 1; }
+
+        /* LOGOUT BUTTON */
+        .logout-btn {
+            font-size: 0.8rem;
+            background: rgba(239, 68, 68, 0.2); color: #ef4444;
+            padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);
+            cursor: pointer; font-weight: 600; display: none;
+        }
+        .logout-btn.visible { display: block; }
+
+        /* STATUS INDICATORS */
+        .status-wrapper { display: flex; gap: 12px; font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+        .status-item { display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: 0.3; transition: all 0.3s; }
+        .status-dot.active { background: #10b981; opacity: 1; box-shadow: 0 0 10px #10b981; }
+
+        /* MAIN CONTENT */
+        main {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--muted) transparent;
+        }
+        main::-webkit-scrollbar { width: 4px; }
+        main::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
+
+        /* CARDS */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, background 0.3s;
+        }
+        .card:hover { transform: translateY(-1px); }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .card-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+
+        /* TIMER */
+        #live-timer {
+            font-size: 4rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-color);
+            text-align: center;
+            font-family: 'Inter', monospace;
+            letter-spacing: -2px;
+            transition: opacity 0.5s ease;
+            line-height: 1;
+            padding: 10px 0;
+        }
+        #live-timer.stale { opacity: 0.2; filter: blur(2px); }
+
+        /* PASSCODE DISPLAY */
+        .passcode-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'Inter', monospace;
+            letter-spacing: 4px;
+            text-align: center;
+            color: var(--success);
+            padding: 10px 0;
+            text-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+            transition: color 0.3s;
+        }
+        .passcode-display.offline { color: var(--error); text-shadow: none; font-size: 1.5rem; letter-spacing: normal; }
+        .passcode-display.waiting { color: var(--muted); font-size: 1.5rem; letter-spacing: 1px; }
+
+        /* CONTROLS */
+        .btn {
+            width: 100%;
+            padding: 14px; border-radius: 12px; border: 1px solid transparent;
+            font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            display: flex;
+            align-items: center; justify-content: center; gap: 8px;
+            position: relative; overflow: hidden;
+        }
+        .btn:active { transform: scale(0.97); }
+
+        .btn-blackout { background: var(--input-bg); color: var(--muted); border-color: var(--card-border); }
+        .btn-blackout:hover { background: rgba(255,255,255,0.05); color: var(--text-color); }
+        .btn-blackout.active { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
+
+        .btn-send { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-send:hover { opacity: 0.95; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+
+        .btn-reset { padding: 6px 10px; font-size: 0.7rem; border-radius: 6px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); width: auto; font-weight: 700; }
+        .btn-reset:hover { background: #ef4444; color: white; }
+
+        /* TEXTAREA */
+        textarea {
+            width: 100%;
+            background: var(--input-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 14px; color: var(--text-color); font-family: inherit;
+            font-size: 0.9rem; resize: none; height: 90px;
+            transition: 0.3s;
+        }
+        textarea:focus { border-color: var(--accent); background: rgba(0,0,0,0.4); }
+
+        /* --- LOGIN OVERLAY --- */
+        #login-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-gradient);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        #login-overlay::before { content: ''; position: absolute; inset: 0; background: rgba(2, 6, 23, 0.8); z-index: -1; }
+
+        .login-input {
+            width: 100%;
+            max-width: 300px; padding: 15px;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px; color: white; font-size: 16px; text-align: center; margin-bottom: 15px;
+            outline: none; transition: 0.2s;
+        }
+        .login-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+
+        /* ANIMATED LOGO */
+        @keyframes korPulse { 
+            0%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} 
+            50%{transform:scale(1.05);box-shadow:0 0 20px rgba(139, 92, 246,0.3)} 
+            100%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} 
+        } 
+        .korLogo { 
+            width: 72px; height: 72px; border-radius: 18px; 
+            background: #1e293b; 
+            display: grid; place-items: center;
+            margin: 0 auto 30px;
+            animation: korPulse 3s ease-in-out infinite;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .korLogo img { width: 44px; height: 44px; border-radius: 8px; display: block; }
+
+        /* --- ACK TOAST --- */
+        #ack-toast {
+            position: absolute;
+            top: 24px; left: 50%;
+            transform: translateX(-50%) translateY(-200%);
+            background: #10b981;
+            color: white; padding: 10px 20px; border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-weight: 600; font-size: 0.9rem;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100; display: flex;
+            align-items: center; gap: 8px; white-space: nowrap;
+            pointer-events: none;
+        }
+        #ack-toast.show { transform: translateX(-50%) translateY(0); }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-frame">
+        
+        <div id="login-overlay">
+            <div class="korLogo">
+                <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" />
+            </div>
+            <h2 style="color:white; margin-bottom:8px; margin-top:0;">Controller Access</h2>
+            <p style="color:#94a3b8; font-size:0.85rem; margin-top:0; margin-bottom:24px;">Secure Environment</p>
+            
+            <input type="email" id="loginEmail" class="login-input" placeholder="Email Address">
+            <input type="password" id="loginPass" class="login-input" placeholder="Password">
+            
+            <button id="loginBtn" class="btn btn-send" style="max-width:300px;">Unlock Dashboard</button>
+            <p id="loginMsg" style="color:#ef4444; margin-top:15px; font-size:0.9rem; min-height: 1.2em; text-align: center;"></p>
+        </div>
+
+        <header>
+            <h1>Global Controller</h1>
+            <div class="header-controls">
+                <div class="status-wrapper">
+                    <div class="status-item"><div id="pres-dot" class="status-dot"></div> P</div>
+                    <div class="status-item"><div id="aud-dot" class="status-dot"></div> A</div>
+                </div>
+                <button class="theme-btn" onclick="toggleTheme()">🌗</button>
+                <button id="logoutBtn" class="logout-btn" onclick="logoutUser()">Exit</button>
+            </div>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-label">Daily Passcode</div>
+                    <div class="card-label" style="opacity: 0.5;">Auto-Sync</div>
+                </div>
+                <div id="daily-passcode" class="passcode-display waiting">WAITING...</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-label">Presenter Timer</div>
+                    <button class="btn btn-reset" onclick="resetTimer()">⟲ RESET</button>
+                </div>
+                <div id="live-timer" class="stale">00:00</div>
+            </div>
+
+<div class="card">
+                <div class="card-label" style="margin-bottom:8px;">Screen Controls</div>
+                <div style="display: flex; gap: 12px;">
+                    <button id="btnBlackout" class="btn btn-blackout" style="flex: 1;" onclick="toggleBlackout()">
+                        👁️ Live
+                    </button>
+                    <button id="btnClear" class="btn btn-blackout" style="flex: 1; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);" onclick="clearDrawings()">
+                        🧽 Clear Ink
+                    </button>
+                </div>
+            </div>
+
+            <div class="card" style="flex:1; justify-content: flex-start;">
+                <div class="card-label">Notify Presenter</div>
+                <textarea id="msgInput" placeholder="Type notification message..."></textarea>
+                <button id="btnSend" class="btn btn-send" onclick="sendMessage()">Send Notification</button>
+            </div>
+        </main>
+        
+        <div id="ack-toast">
+            <span>✓</span> Presenter Acknowledged!
+        </div>
+    </div>
+
+    <script type="module">
+        // 1. IMPORTS
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // FIX APPLIED: Added 'updateDoc' and 'serverTimestamp' here
+        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getDatabase, ref, set, onValue, remove, onDisconnect, get as getDb } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // 2. CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
+            authDomain: "slidesync-37cd4.firebaseapp.com",
+            databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "slidesync-37cd4",
+            storageBucket: "slidesync-37cd4.firebasestorage.app",
+            messagingSenderId: "996754972458",
+            appId: "1:996754972458:web:7f8be6880c3463ac6a4853",
+            measurementId: "G-GCBS3X7STT"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const firestore = getFirestore(app);
+        const db = getDatabase(app);
+
+        // --- THEME TOGGLE ---
+        window.toggleTheme = () => { document.body.classList.toggle('light-mode'); }
+
+        // --- AUTHENTICATION LOGIC ---
+        
+        // Login Button Handler
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const msg = document.getElementById('loginMsg');
+            const btn = document.getElementById('loginBtn');
+
+            if(!email || !pass) { msg.textContent = "Please enter email and password."; return; }
+            msg.textContent = "";
+            btn.textContent = "Verifying...";
+           
+            signInWithEmailAndPassword(auth, email, pass).catch((error) => {
+                msg.textContent = "Error: " + error.message;
+                btn.textContent = "Unlock Dashboard"; 
+            });
+        });
+
+        // Auth Gatekeeper
+        onAuthStateChanged(auth, async (user) => {
+            const overlay = document.getElementById('login-overlay');
+            const msg = document.getElementById('loginMsg');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            if (user) {
+                try {
+                    const userRef = doc(firestore, "users", user.uid);
+                    const snap = await getDoc(userRef);
+
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.accountStatus === 'disabled') throw new Error("Account deactivated.");
+
+                        // --- MULTI-ROLE CHECK START ---
+                        let userRoles = [];
+
+                        // 1. Get Legacy Single Role
+                        if (data.role) userRoles.push(String(data.role).toLowerCase().trim());
+
+                        // 2. Get New Multi-Roles Array
+                        if (data.roles && Array.isArray(data.roles)) {
+                            const cleanRoles = data.roles.map(r => String(r).toLowerCase().trim());
+                            userRoles = [...userRoles, ...cleanRoles];
+                        }
+
+                        // 3. Define Allowed Roles for Controller
+                        const ALLOWED_ACCESS = ['admin', 'worship1', 'worship2', 'worship3', 'presenter1', 'presenter2', 'presenter3'];
+
+                        // 4. Check if ANY user role is in the allowed list
+                        const hasPermission = userRoles.some(r => ALLOWED_ACCESS.includes(r));
+
+                        if (hasPermission) {
+                            // UNLOCK
+                            overlay.style.display = 'none';
+                            logoutBtn.classList.add('visible');
+                            initController(); // Start listeners
+                        } else {
+                            throw new Error("Access Denied: You do not have permission.");
+                        }
+                        // --- MULTI-ROLE CHECK END ---
+
+                    } else {
+                        throw new Error("User profile not found.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    msg.textContent = e.message;
+                    signOut(auth);
+                }
+            } else {
+                // LOCK SCREEN
+                overlay.style.display = 'flex';
+                logoutBtn.classList.remove('visible');
+                document.getElementById('loginBtn').textContent = "Unlock Dashboard";
+            }
+        });
+
+        window.logoutUser = () => {
+            signOut(auth).then(() => {
+                window.location.reload();
+            });
+        };
+
+        // --- CONTROLLER LOGIC ---
+        function initController() {
+            // NEW: LISTEN FOR DAILY PASSCODE
+            onValue(ref(db, 'presentation/access/passcode'), (snapshot) => {
+                const data = snapshot.val();
+                const display = document.getElementById('daily-passcode');
+                
+                if (data && data.code) {
+                    display.innerText = data.code;
+                    display.className = "passcode-display"; // Reset classes
+                } else {
+                    display.innerText = "WAITING...";
+                    display.className = "passcode-display waiting";
+                }
+            }, (error) => {
+                 const display = document.getElementById('daily-passcode');
+                 display.innerText = "OFFLINE";
+                 display.className = "passcode-display offline";
+            });
+
+            // 1. LISTEN TO TIMER
+            onValue(ref(db, 'presentation/timer'), (snapshot) => {
+                const time = snapshot.val() || 0;
+                let mins = Math.floor(time / 60).toString().padStart(2, '0');
+                let secs = (time % 60).toString().padStart(2, '0');
+                document.getElementById('live-timer').innerText = `${mins}:${secs}`;
+            });
+
+            // 2. LISTEN TO SCREEN STATUS
+            onValue(ref(db, 'presentation/status'), (snapshot) => {
+                const data = snapshot.val();
+                const btn = document.getElementById('btnBlackout');
+                if (data && data.state === 'offline') {
+                    btn.classList.add('active');
+                    btn.innerHTML = "🔴 SCREEN IS OFF";
+                    isBlackout = true;
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = "🟢 SCREEN IS LIVE";
+                    isBlackout = false;
+                }
+            });
+
+            // 3. LISTEN FOR ACK
+            let lastAckTime = Date.now();
+            onValue(ref(db, 'presentation/ack'), (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.timestamp > lastAckTime) {
+                    lastAckTime = data.timestamp;
+                    showToast();
+                }
+            });
+
+            // 4. LISTEN FOR PRESENTER PRESENCE
+            onValue(ref(db, 'presentation/presence/presenter'), (snapshot) => {
+                const dot = document.getElementById('pres-dot');
+                const timer = document.getElementById('live-timer');
+                if (snapshot.exists()) {
+                    dot.classList.add('active');
+                    timer.classList.remove('stale');
+                } else {
+                    dot.classList.remove('active');
+                    timer.classList.add('stale');
+                }
+            });
+
+            // 5. LISTEN FOR AUDIENCE PRESENCE
+            onValue(ref(db, 'presentation/presence/audience'), (snapshot) => {
+                const dot = document.getElementById('aud-dot');
+                if (snapshot.exists() && snapshot.size > 0) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function showToast() {
+            const t = document.getElementById('ack-toast');
+            t.classList.add('show');
+            setTimeout(() => { t.classList.remove('show'); }, 15000);
+        }
+
+        window.resetTimer = () => {
+            if(confirm("Are you sure you want to reset the timer to 00:00?")) { 
+                set(ref(db, 'presentation/timer'), 0);
+            }
+        }
+
+        let isBlackout = false;
+        window.toggleBlackout = () => {
+            const statusRef = ref(db, 'presentation/status');
+            getDb(statusRef).then((snapshot) => {
+                const currentData = snapshot.val() || {};
+                const preservedVersion = currentData.version || Date.now();
+                const newState = isBlackout ? 'online' : 'offline';
+                set(statusRef, { state: newState, version: preservedVersion });
+            });
+        }
+
+        window.sendMessage = () => {
+            const text = document.getElementById('msgInput').value;
+            if(!text.trim()) return;
+            set(ref(db, 'presentation/message'), { text: text, timestamp: Date.now() }).then(() => {
+                const btn = document.getElementById('btnSend');
+                const originalText = btn.innerText;
+                btn.innerText = "Sent!";
+                setTimeout(() => btn.innerText = originalText, 1000);
+                document.getElementById('msgInput').value = '';
+            });
+        }
+		
+		window.clearDrawings = () => {
+            if(confirm("Are you sure you want to clear all pen and highlight marks from the screen?")) {
+                remove(ref(db, 'presentation/drawing')).then(() => {
+                    const btn = document.getElementById('btnClear');
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = "✨ Cleared!";
+                    setTimeout(() => { btn.innerHTML = originalHtml; }, 1500);
+                }).catch(err => console.error("Failed to clear drawings:", err));
+            }
+        };
+
+
+// ==========================================
+// CORRECTED TRACKER (For your specific setup)
+// ==========================================
+onAuthStateChanged(auth, (user) => { 
+    if (user) { 
+        // ⚠️ CRITICAL CHANGE: We use 'firestore' here because of your setup
+        const userRef = doc(firestore, "users", user.uid);
+
+        updateDoc(userRef, { 
+            lastLogin: serverTimestamp(),
+            lastPortal: "Controller" // Change this name based on which file this is!
+        }).then(() => {
+            console.log("✅ Tracker: Location & Time updated for " + user.email);
+        }).catch((e) => {
+            console.error("Tracker Warning (User might not exist yet):", e.message);
+        });
+    } 
+});
+    </script>
+    
+</body>
+</html>

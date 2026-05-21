@@ -1,0 +1,1005 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Presenter - Desktop Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- DESKTOP VARIABLES & RESET (COMPACT MODE APPLIED) --- */
+        * { box-sizing: border-box; outline: none; user-select: none; }
+        :root { 
+            /* DEFAULT IS NOW LIGHT MODE VARIABLES */
+            --bg-color: #f8fafc;
+            --text-color: #334155; 
+            --sidebar-bg: rgba(255, 255, 255, 0.85); 
+            --main-bg: radial-gradient(circle at center, #f1f5f9 0%, #e2e8f0 100%); 
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(0, 0, 0, 0.08); 
+            --glass-highlight: rgba(255, 255, 255, 0.5); 
+            --accent: #8b5cf6; 
+            --accent-hover: #7c3aed; 
+            --danger: #ef4444; 
+            --success: #10b981; 
+            --muted: #64748b;
+            --radius: 8px; /* Tighter radius */
+            --preview-bg: #e2e8f0; 
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark-mode { 
+            --bg-color: #020617;
+            --text-color: #e2e8f0; 
+            --sidebar-bg: rgba(15, 23, 42, 0.75); 
+            --main-bg: radial-gradient(circle at center, #1e293b 0%, #020617 100%); 
+            --glass-bg: rgba(30, 41, 59, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1); 
+            --glass-highlight: rgba(255, 255, 255, 0.03); 
+            --muted: #94a3b8; 
+            --preview-bg: #000;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            margin: 0;
+            height: 100vh; 
+            display: flex; 
+            overflow: hidden; 
+            transition: background-color 0.3s, color 0.3s;
+            /* STEP BACK: Compact Base Font */
+            font-size: 12px; 
+        }
+        
+        button { cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+        button:active { transform: scale(0.98); }
+        
+        .btn { 
+            padding: 6px 10px; /* Reduced padding */
+            border-radius: var(--radius); 
+            font-size: 11px; /* Smaller font */
+            font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 6px; 
+            background: var(--glass-highlight); 
+            border: 1px solid var(--glass-border); 
+            color: var(--text-color); 
+            backdrop-filter: blur(4px); 
+            box-shadow: var(--shadow-sm);
+        }
+        .btn:hover { background: rgba(139, 92, 246, 0.1); border-color: var(--accent); transform: translateY(-1px); }
+        .btn.primary { background: var(--accent); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn.primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+        .btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        .btn.danger:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); }
+        .btn.success { color: var(--success); border-color: rgba(16,185,129,0.3); }
+        .btn.success:hover { background: rgba(16,185,129,0.1); border-color: var(--success); }
+        .btn-icon-only { padding: 4px; width: 28px; height: 28px; border-radius: 50%; }
+
+        /* --- COMPACT LAYOUT --- */
+        #sidebar { 
+            width: 210px; /* Reduced Width */
+            background: var(--sidebar-bg); 
+            border-right: 1px solid var(--glass-border); 
+            display: flex; flex-direction: column; flex-shrink: 0; z-index: 20; 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+            box-shadow: 5px 0 30px rgba(0,0,0,0.05);
+        }
+        #main-area { flex-grow: 1; display: flex; flex-direction: column; position: relative; background: var(--main-bg); min-width: 0; }
+        
+        #right-pane { 
+            width: 210px; /* Reduced Width to match sidebar */
+            background: var(--sidebar-bg); border-left: 1px solid var(--glass-border); 
+            display: flex; flex-direction: column; flex-shrink: 0; 
+            padding: 12px; gap: 16px; /* Tighter spacing */
+            z-index: 20; backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); 
+            box-shadow: -5px 0 30px rgba(0,0,0,0.05); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--muted) transparent;
+        }
+        #right-pane::-webkit-scrollbar { width: 4px; }
+        #right-pane::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
+
+        .sidebar-header { 
+            padding: 12px; /* Reduced padding */
+            border-bottom: 1px solid var(--glass-border); 
+            display: flex; flex-direction: column;
+            gap: 8px; background: rgba(0,0,0,0.02); 
+        }
+        
+        #thumb-list { overflow-y: auto; flex-grow: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        
+.slide-thumb { 
+    width: 100%; 
+    cursor: pointer;
+    border: 2px solid transparent; 
+    opacity: 0.7; 
+    transition: 0.3s; 
+    border-radius: 6px; 
+    background: #ccc; 
+    
+    /* --- THE FIX --- */
+    flex-shrink: 0; /* Prevents the squishing effect */
+    aspect-ratio: 16 / 9; /* Locks in the professional slide shape */
+    object-fit: cover; /* Ensures the image fills the 16:9 box cleanly */
+    /* Remove the old min-height: 40px here */
+    
+    box-shadow: var(--shadow-sm);
+}
+        .slide-thumb.active { border-color: var(--accent); opacity: 1; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); transform: scale(1.02); }
+        .slide-thumb:hover { opacity: 1; }
+
+        #preview-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow: hidden; position: relative; gap: 16px; }
+        
+        #notification-box { 
+            display: none;
+            width: auto; min-width: 280px; 
+            background: rgba(239, 68, 68, 0.9); border: 1px solid #f87171; 
+            border-radius: 8px; padding: 10px 16px; color: white;
+            box-shadow: var(--shadow-md); animation: slideDown 0.3s ease-out; z-index: 50; 
+            flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; 
+            position: absolute; top: 20px;
+            backdrop-filter: blur(10px); 
+        }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #notif-text { font-weight: 600; font-size: 0.8rem; flex: 1; }
+
+        #preview-container { position: relative; border: 1px solid var(--glass-border); background: var(--preview-bg); box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; }
+        #preview, #drawCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #preview { z-index: 1; object-fit: contain; }
+        #drawCanvas { z-index: 2; pointer-events: auto; }
+        #preview-loader { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-color); z-index: 5; color: var(--muted); pointer-events: none; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--glass-border); border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .bottom-nav { 
+            height: 50px; /* Reduced Height */
+            border-top: 1px solid var(--glass-border); background: var(--sidebar-bg); 
+            display: flex; justify-content: center; align-items: center; gap: 24px; backdrop-filter: blur(20px);
+        }
+        .slide-counter { font-size: 0.8rem; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+
+        .timer-box { 
+            text-align: center; background: var(--glass-highlight); padding: 10px; border-radius: 12px;
+            border: 1px solid var(--glass-border); box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+        #timer { 
+            font-size: 2rem; /* Reduced from 2.2 */
+            font-weight: 700; color: var(--text-color); font-family: 'JetBrains Mono', monospace;
+            line-height: 1; margin: 6px 0 10px; text-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+        }
+        #preshow-overlay { background: #eab308; color: #000; padding: 4px; border-radius: 4px; font-weight: bold; font-size: 0.7rem; margin-bottom: 8px; display: none; }
+        
+        .tool-group { display: flex; flex-direction: column; gap: 6px; }
+        .group-label { 
+            font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+            font-weight: 700; margin-bottom: 2px; border-left: 3px solid var(--accent); padding-left: 8px;
+        }
+        
+        .tool-grid { display: grid; grid-template-columns: 1fr; gap: 6px; width: 100% }
+        .btn-tool { 
+            width: 100%; justify-content: flex-start;
+            padding: 0 10px; height: 32px; /* Reduced height */
+            font-size: 0.8rem; display: flex; align-items: center; white-space: nowrap;
+        }
+        .btn-tool.active { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+        .btn-tool span { overflow: hidden; text-overflow: ellipsis; }
+        
+        #color-palette { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 8px; justify-content: center; }
+        .color-dot { width: 20px; height: 20px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; box-shadow: var(--shadow-sm); }
+        .color-dot.active { border-color: var(--text-color); transform: scale(1.15); box-shadow: 0 0 8px rgba(139, 92, 246, 0.4); }
+        .color-dot:hover { transform: scale(1.15); }
+        
+        .slider-container { display: none; align-items: center; gap: 8px; margin-top: 4px; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 8px; width: 100%; }
+        input[type=range] { flex: 1; height: 4px; border-radius: 2px; background: var(--glass-border); outline: none; -webkit-appearance: none; min-width: 0; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid white; box-shadow: var(--shadow-sm); }
+        
+        #textInput { position: absolute; display: none; z-index: 1000; background: transparent; color: inherit; border: 1px dashed var(--accent); padding: 0 4px; font-family: 'Inter', sans-serif; font-weight: bold; min-width: 50px; height: 30px; outline: none; line-height: 30px; }
+
+        /* --- LOGIN OVERLAY --- */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020617; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .login-box { 
+            background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 30px; /* Reduced padding */
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); width: 100%; max-width: 320px; text-align: center;
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.7); 
+        }
+        @keyframes korPulse { 0%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} 50%{transform:scale(1.05);box-shadow:0 0 30px rgba(139, 92, 246,0.3)} 100%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} } 
+        .korLogo { 
+            width: 60px; height: 60px; /* Reduced size */
+            border-radius: 14px; background: #1e293b; display: grid; place-items: center; margin: 0 auto 16px; animation: korPulse 3s ease-in-out infinite;
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+        .korLogo img { width: 32px; height: 32px; border-radius: 6px; display: block; }
+        
+        .login-input { 
+            width: 100%; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 10px; /* Compact */
+            background: rgba(0,0,0,0.3); color: white; outline: none; font-family: inherit; font-size: 14px; text-align: center; margin-bottom: 8px; transition: 0.2s;
+        }
+        .login-input:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(139, 92, 246, 0.1); }
+    </style>
+</head>
+<body> 
+    <div id="login-overlay">
+        <div class="login-box">
+            <div class="korLogo"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" /></div>
+            <h2 style="margin: 0 0 4px 0; font-size: 18px; color:white; font-weight: 700;">Presenter Desktop</h2>
+            <p style="color:#94a3b8; font-size:11px; margin: 0 0 20px 0;">Authorized Personnel Only</p>
+            
+            <input type="email" id="loginEmail" class="login-input" placeholder="Email Address">
+            <input type="password" id="loginPass" class="login-input" placeholder="Password">
+            
+            <button id="loginBtn" class="btn primary" style="width:100%; padding:10px; font-size:0.9rem; margin-top:8px;">Access Console</button>
+            
+            <div style="text-align:center; margin-top:12px;">
+                <button onclick="window.resetUserPassword()" style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:11px; cursor:pointer; text-decoration:underline;">Forgot Password?</button>
+            </div>
+
+            <p id="loginMsg" style="color:#ef4444; font-size:11px; margin-top:12px; min-height:1em;"></p>
+        </div>
+    </div>
+
+    <div id="app-container" style="display:flex; width:100%; height:100%; opacity:0; pointer-events:none; transition: opacity 0.5s;">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <button class="btn" onclick="toggleTheme()">🌗 Dark/Light</button>
+                
+                <div style="display:flex; gap:6px;">
+                    <button class="btn" style="flex:1;" onclick="toggleFullScreen()">⛶ Screen</button>
+                    <button class="btn success" style="flex:1;" onclick="startSync(true)">🔄 Sync Now</button>
+                </div>
+                <div id="scan-wrapper" style="display:none; margin-top:8px;">
+                     <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-bottom:4px;"><span id="scan-msg">Loading...</span></div>
+                     <div style="width:100%; background:var(--glass-highlight); height:4px; border-radius:2px; overflow:hidden;"><div id="scan-bar" style="width:0%; background:var(--success); height:100%;"></div></div>
+                 </div>
+            </div>
+            <div id="thumb-list"></div>
+        </div>
+
+        <div id="main-area">
+            <div id="preview-wrapper">
+                <div id="notification-box" style="display:none;">
+                    <div style="display:flex; align-items:center; gap:10px;"><span style="font-size:1.2rem;">📢</span><span id="notif-text">Controller Message</span></div>
+                    <button class="btn" style="background:white; color:#dc2626; border:none; padding:6px 12px;" onclick="acknowledgeMessage()">Acknowledge✅</button>
+                </div>
+                <div id="preview-container">
+                    <div id="preview-loader"><div class="spinner"></div><div id="loader-text" style="font-size:11px; font-weight:600;">Connecting...</div></div>
+                    <img id="preview" src="" style="display:none;" crossorigin="anonymous">
+                    <canvas id="drawCanvas"></canvas>
+                    <input type="text" id="textInput" placeholder="Type..." autocomplete="off">
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <button class="btn" onclick="changeSlide(-1)">Previous</button>
+                <span class="slide-counter">Slide <span id="slide-num">0</span> / <span id="total-num">0</span></span>
+                <button class="btn" onclick="changeSlide(1)">Next</button>
+            </div>
+        </div>
+
+        <div id="right-pane">
+            <div class="timer-box">
+                <div id="preshow-overlay">Starting in: <span id="preshow-count">60</span>s</div>
+                <div id="timer">00:00</div>
+                <div style="display:flex; gap:6px; justify-content:center;">
+                    <button class="btn-icon-only btn" style="color:#10b981; border-color:rgba(16,185,129,0.3)" onclick="startTimer()">▶</button>
+                    <button class="btn-icon-only btn" style="color:#f59e0b; border-color:rgba(245,158,11,0.3)" onclick="pauseTimer()">⏸</button>
+                    <button class="btn-icon-only btn" style="color:#ef4444; border-color:rgba(239,68,68,0.3)" onclick="resetTimer()">⏹</button>
+                </div>
+            </div>
+            <hr style="border:0; border-top:1px solid var(--glass-border); width:100%; margin:0;">
+            <div class="tool-group">
+                <div class="group-label">Tools</div>
+                <div class="tool-grid">
+                    <button id="btnPen" class="btn btn-tool active" onclick="setTool('pen')"><span>🖊️ Pen</span></button>
+                    <button id="btnHighlighter" class="btn btn-tool" onclick="setTool('highlighter')"><span>🖍️ Hi-Lite</span></button>
+                    <button id="btnText" class="btn btn-tool" onclick="setTool('text')"><span>🔤 Text</span></button>
+                    <button id="btnEraser" class="btn btn-tool" onclick="setTool('eraser')"><span>🧽 Eraser</span></button>
+                    </div>
+                <div id="color-palette">
+                    <div class="color-dot active" style="background:#ef4444;" onclick="setColor('red', this)"></div>
+                    <div class="color-dot" style="background:#facc15;" onclick="setColor('#facc15', this)"></div> 
+                    <div class="color-dot" style="background:#22c55e;" onclick="setColor('#22c55e', this)"></div> 
+                    <div class="color-dot" style="background:#3b82f6;" onclick="setColor('#3b82f6', this)"></div> 
+                    <div class="color-dot" style="background:#000000; border:1px solid #999;" onclick="setColor('#000000', this)"></div>
+                </div>
+                <div id="size-control" class="slider-container">
+                    <span style="font-size:9px; color:var(--muted); width:18px;">Sz</span>
+                    <input type="range" id="toolSize" min="5" max="80" value="10" oninput="setSize(this.value)">
+                </div>
+            </div>
+            <div style="flex-grow:1;"></div>
+            <div class="tool-group">
+                <div class="group-label">Session</div>
+                
+                <button id="btnLaunch" class="btn primary" style="font-size:0.75rem; margin-bottom:4px; display: none;" onclick="launchAudience()">🚀 Launch Audience View</button>
+
+                <button id="btnBlackout" class="btn" style="display:none; color:#cbd5e1; font-weight:700; font-size:0.75rem;" onclick="toggleBlackout()">🔴 SCREEN IS OFF</button>
+                <div style="display:flex; gap:6px; margin-top:4px;">
+                    <button class="btn" style="flex:1;" onclick="undoLast()">↩ Undo</button>
+                    <button class="btn danger" style="flex:1;" onclick="clearCanvas(true)">🗑️ Clr</button>
+                </div>
+                <button class="btn danger" style="margin-top:12px; border:1px solid rgba(239,68,68,0.3); background:transparent;" onclick="logout()">🔒 Log Off</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ✅ UPDATED IMPORTS TO v10.7.1
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, remove, get, query, limitToLast, onDisconnect, child, serverTimestamp as rtdbTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // ✅ ADDED FIRESTORE (Required for Tracker)
+        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
+            authDomain: "slidesync-37cd4.firebaseapp.com",
+            databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "slidesync-37cd4",
+            storageBucket: "slidesync-37cd4.firebasestorage.app",
+            messagingSenderId: "996754972458",
+            appId: "1:996754972458:web:7f8be6880c3463ac6a4853",
+            measurementId: "G-GCBS3X7STT"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const firestore = getFirestore(app);
+        const db = getDatabase(app);
+
+        // --- AUTHENTICATION & ROLE LOGIC ---
+        // Login Handler
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const msg = document.getElementById('loginMsg');
+            const btn = document.getElementById('loginBtn');
+
+            if(!email || !pass) { msg.textContent = "Please enter email and password."; return; }
+            msg.textContent = "";
+            btn.textContent = "Verifying...";
+            btn.disabled = true;
+           
+            signInWithEmailAndPassword(auth, email, pass).catch((error) => {
+                msg.textContent = "Error: " + error.message;
+                btn.textContent = "Access Console"; 
+                btn.disabled = false;
+            });
+        });
+
+        // Auth Gatekeeper
+        onAuthStateChanged(auth, async (user) => {
+            const overlay = document.getElementById('login-overlay');
+            const msg = document.getElementById('loginMsg');
+            const btn = document.getElementById('loginBtn');
+
+            // CRITICAL: Set global auth
+            window.firebaseAuth = auth;
+
+            if (user) {
+                try {
+                    const userRef = doc(firestore, "users", user.uid);
+                    const snap = await getDoc(userRef);
+
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.accountStatus === 'disabled') throw new Error("Account deactivated.");
+
+                        // --- MULTI-ROLE CHECK START ---
+                        let userRoles = [];
+                        if (data.role) userRoles.push(String(data.role).toLowerCase().trim());
+                        if (data.roles && Array.isArray(data.roles)) {
+                            const cleanRoles = data.roles.map(r => String(r).toLowerCase().trim());
+                            userRoles = [...userRoles, ...cleanRoles];
+                        }
+
+                        // Allowed roles for PRESENTATION
+                        const ALLOWED_ACCESS = ['admin', 'presenter1', 'presenter2', 'presenter3'];
+                        const hasPermission = userRoles.some(r => ALLOWED_ACCESS.includes(r));
+
+                        if (hasPermission) {
+                            // UNLOCK
+                            overlay.style.display = 'none';
+                            document.getElementById('app-container').style.opacity = '1';
+                            document.getElementById('app-container').style.pointerEvents = 'all';
+                            
+                            // Initialize Presence
+                            const myPresenceRef = ref(db, 'presentation/presence/presenter');
+                            set(myPresenceRef, true);
+                            onDisconnect(myPresenceRef).remove();
+                            
+                            // Check for session restore
+                            checkSessionRestoration();
+                        } else {
+                            throw new Error("Access Denied: You are not a Presenter.");
+                        }
+                    } else {
+                        throw new Error("User profile not found.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    msg.textContent = e.message;
+                    btn.disabled = false;
+                    btn.textContent = "Access Console";
+                    signOut(auth);
+                }
+            } else {
+                // LOCK SCREEN
+                overlay.style.display = 'flex';
+                document.getElementById('app-container').style.opacity = '0';
+                document.getElementById('app-container').style.pointerEvents = 'none';
+                btn.disabled = false;
+                btn.textContent = "Access Console";
+            }
+        });
+
+        // ✅ LOGOUT WITH CONFIRMATION
+        window.logout = () => {
+            if(!confirm("Are you sure you want to end this session?")) return;
+            window.onbeforeunload = null; 
+            localStorage.removeItem(SESSION_KEY);
+            set(ref(db, 'presentation/status'), { state: 'online' });
+            signOut(auth).then(() => {
+                location.reload();
+            });
+        }
+
+        // ==========================================
+        // 4. RESET PASSWORD LOGIC (Added Feature)
+        // ==========================================
+        window.resetUserPassword = async () => {
+            const email = prompt("Enter your email address to reset password:");
+            if (!email) return;
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert(`✅ Password reset email sent to: ${email}\n\n⚠️ IMPORTANT: Please check your SPAM/JUNK folder if you do not see it in your inbox.`);
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        };
+
+        // ==========================================
+        // 5. LOGIN TRACKER (Auto-Update Last Seen)
+        // ==========================================
+        // --- TRACKER FIX APPLIED ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                updateDoc(doc(firestore, "users", user.uid), {
+                    lastLogin: serverTimestamp()
+                }).then(() => {
+                    console.log("Login timestamp updated successfully.");
+                }).catch((error) => {
+                    console.error("Failed to update timestamp:", error);
+                });
+            }
+        });
+
+        // --- SESSION LOGIC ---
+        const SESSION_KEY = 'desktop_presenter_session';
+        const SESSION_TIMEOUT = 15 * 60 * 1000;
+        const AUDIENCE_URL = "https://king-righteousness.w3spaces.com/Presentations/audience.html";
+        let sessionVersion = Date.now();
+        function checkSessionRestoration() {
+            const raw = localStorage.getItem(SESSION_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (Date.now() - data.timestamp < SESSION_TIMEOUT) {
+                    sessionVersion = data.version;
+                    startNewSession(true); // Restore
+                } else {
+                    sessionVersion = Date.now();
+                    saveSession();
+                    startNewSession(false); // Fresh
+                }
+            } else {
+                sessionVersion = Date.now();
+                saveSession();
+                startNewSession(false); // Fresh
+            }
+            updateContainerLayout();
+        }
+
+        // --- NEW LAUNCHER LOGIC ---
+        window.launchAudience = async function() {
+            try {
+                let options = "width=1024,height=768";
+                if ('getScreenDetails' in window) {
+                    const screenDetails = await window.getScreenDetails();
+                    const externalScreen = screenDetails.screens.find(s => s !== screenDetails.currentScreen);
+                    if (externalScreen) {
+                        options = `left=${externalScreen.availLeft},top=${externalScreen.availTop},width=${externalScreen.availWidth},height=${externalScreen.availHeight},menubar=no,toolbar=no,location=no,status=no,resizable=yes`;
+                        console.log("Secondary monitor detected. Launching window at:", externalScreen.availLeft, externalScreen.availTop);
+                    }
+                }
+                window.open(AUDIENCE_URL, 'AudienceWindow', options);
+            } catch (err) {
+                console.warn("Window Management API not supported or permission denied. Using fallback.", err);
+                window.open(AUDIENCE_URL, 'AudienceWindow', 'width=1024,height=768,menubar=no');
+            }
+        };
+        // --- IDLE WATCHDOG LOGIC (Implemented 30-Minute Timeout) ---
+window.resetIdleTimer = () => {};
+
+        // ⚠️ REPLACE THIS WITH YOUR DEPLOYED WEB APP URL
+        const BRIDGE_URL = "https://script.google.com/macros/s/AKfycbxcsC-oAIAH3da9N-JsscdZD5Xdy30PGbJHT4K0U8xvvXY6A5IsvZZOW6rOw4smSLyxaA/exec";
+        let currentSlide = 1; 
+        let slideList = []; 
+        let slideCache = {};
+        let currentTool = 'pen', currentColor = 'red';
+        let currentSize = 10; 
+        let isBlackout = false;
+        let isDrawing = false, currentPath = [], allDrawingData = [];
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const RENDER_W = 1920;
+        const RENDER_H = 1080;
+        set(ref(db, 'presentation/status'), { state: 'online' });
+        document.getElementById('preview').onload = function() {
+            this.style.display = 'block';
+            document.getElementById('preview-loader').style.display = 'none';
+            syncLiveView(); 
+        };
+
+window.syncLiveView = async function() {
+            const img = document.getElementById('preview');
+            
+            // Safety check: Prevent crashing if the image hasn't loaded yet
+            if (!img || !img.src) return;
+
+            // Create a temporary workspace
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.naturalWidth || 1920;
+            tempCanvas.height = img.naturalHeight || 1080;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // 1. Draw ONLY your base JPG Slide (No drawings baked in!)
+            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            // 2. Compress into a lightweight JPG
+            const imageData = tempCanvas.toDataURL('image/jpeg', 0.8);
+            
+            // 3. Broadcast the clean background image to the Audience
+            set(ref(db, 'presentation/liveView'), imageData);
+            
+            // 4. Hide any leftover Text or Videos on the Audience screen
+            set(ref(db, 'presentation/text'), null);
+            set(ref(db, 'presentation/video'), { state: 'stop' });
+        }
+
+        // --- UPDATED SYNC LOGIC ---
+        window.startSync = async function(force = false) {
+            const list = document.getElementById('thumb-list');
+            const scanWrapper = document.getElementById('scan-wrapper');
+            const scanMsg = document.getElementById('scan-msg');
+            list.innerHTML = '';
+            scanWrapper.style.display = 'block';
+            // Choose action based on button click
+            const action = force ? "sync" : "list";
+            scanMsg.innerText = force ? "Scanning Drive (Please Wait)..." : "Loading Cache...";
+
+            slideList = [];
+            // --- CRITICAL FIX: CLEAR CACHE ON SYNC ---
+            if(force) { slideCache = {}; } 
+            
+            try {
+                // --- CRITICAL FIX: ADD TIMESTAMP (t=Date.now()) TO BUST BROWSER CACHE ---
+                const response = await fetch(BRIDGE_URL + "?action=" + action + "&t=" + Date.now());
+                const data = await response.json();
+
+                if (data.ok && data.files) {
+                    slideList = data.files.map((file, index) => ({ num: index + 1, id: file.id, name: file.name }));
+                    document.getElementById('total-num').innerText = slideList.length;
+
+                    slideList.forEach(slide => {
+                        const img = document.createElement('img');
+                        img.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiA5IiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PC9zdmc+'; 
+                        img.className = 'slide-thumb';
+                        img.id = `thumb-${slide.num}`;
+                        img.onclick = () => { 
+                            currentSlide = slide.num; 
+                            updateView(); 
+                        };
+                        list.appendChild(img);
+                    });
+                    // Load first slide content immediately
+                    await loadSlideContent(currentSlide);
+                    updateView(); 
+                    startPreShowTimer();
+                    scanWrapper.style.display = 'none';
+                    // Background load rest
+                    loadRestOfSlides();
+                } else { scanMsg.innerText = "Error: " + (data.error || "No files found"); }
+            } catch (e) { console.error("❌ Sync Error:", e); scanMsg.innerText = "Sync Failed."; }
+        }
+
+        async function loadSlideContent(slideNum) {
+            const slide = slideList.find(s => s.num === slideNum);
+            if (!slide || slideCache[slide.id]) return;
+
+            if (currentSlide === slideNum) {
+                document.getElementById('preview-loader').style.display = 'flex';
+                document.getElementById('loader-text').innerText = "Streaming Slide " + slideNum + "...";
+            }
+
+            try {
+                // DIRECT FIREBASE FETCH (FAST)
+                const snapshot = await get(ref(db, 'slide_storage/' + slide.id + '/data'));
+                if (snapshot.exists()) {
+                    const base64Data = snapshot.val();
+                    slideCache[slide.id] = base64Data; 
+                    const thumb = document.getElementById(`thumb-${slideNum}`);
+                    if (thumb) thumb.src = base64Data;
+                }
+            } catch (e) { 
+                console.error("Failed to load slide " + slideNum, e);
+            }
+        }
+
+        async function loadRestOfSlides() {
+            for (const s of slideList) { await loadSlideContent(s.num); await new Promise(r => setTimeout(r, 100)); }
+        }
+
+async function updateView() {
+            if (slideList.length === 0) return;
+            const slide = slideList.find(s => s.num === currentSlide);
+            if (!slide) return;
+
+            document.getElementById('slide-num').innerText = currentSlide;
+            document.querySelectorAll('.slide-thumb').forEach(el => el.classList.remove('active'));
+            const activeThumb = document.getElementById(`thumb-${currentSlide}`);
+            if(activeThumb) { activeThumb.classList.add('active'); activeThumb.scrollIntoView({ behavior: "smooth", block: "center" }); }
+
+            const img = document.getElementById('preview');
+            const loader = document.getElementById('preview-loader');
+            
+            if (slideCache[slide.id]) {
+                img.src = slideCache[slide.id];
+            } else {
+                await loadSlideContent(currentSlide);
+                if (slideCache[slide.id]) img.src = slideCache[slide.id];
+            }
+
+            set(ref(db, 'presentation/currentSlide'), currentSlide);
+            redrawCanvas();
+            
+            // --- CRITICAL FIX: FORCE THE BROADCAST ---
+            // A 50ms delay ensures the browser has finished changing the image 
+            // before we take a snapshot to send to the audience.
+            setTimeout(() => {
+                if (window.syncLiveView) window.syncLiveView();
+            }, 50);
+        }
+
+        window.acknowledgeMessage = () => {
+            set(ref(db, 'presentation/ack'), { timestamp: Date.now(), text: "Acknowledged" });
+            remove(ref(db, 'presentation/message'));
+        }
+
+        function updateStatus(state) {
+            set(ref(db, 'presentation/status'), { state: state, version: sessionVersion });
+        }
+
+window.toggleBlackout = () => {
+            const btn = document.getElementById('btnBlackout');
+            if(!isBlackout) { 
+                updateStatus('online'); 
+                
+                // --- INSTANT WIPE: Clears all drawings when screen goes off ---
+                remove(ref(db, 'presentation/drawing'));
+                
+            } else { 
+                updateStatus('online'); 
+            }
+        }
+
+        function startPreShowTimer() {
+            const overlay = document.getElementById('preshow-overlay');
+            const countSpan = document.getElementById('preshow-count');
+            const overlayTimer = document.getElementById('preshow-overlay');
+            overlayTimer.style.display = 'block';
+            let timeLeft = 60;
+            countSpan.innerText = timeLeft;
+            const preInterval = setInterval(() => {
+                timeLeft--;
+                countSpan.innerText = timeLeft;
+                if (timeLeft <= 0) { clearInterval(preInterval); overlay.style.display = 'none'; startTimer(); }
+            }, 1000);
+        }
+
+        let time = 0, interval;
+        window.startTimer = () => {
+            document.getElementById('preshow-overlay').style.display = 'none';
+            if(interval) return;
+            interval = setInterval(() => {
+                time++;
+                let mins = Math.floor(time / 60).toString().padStart(2, '0');
+                let secs = (time % 60).toString().padStart(2, '0');
+                const timeStr = `${mins}:${secs}`;
+                document.getElementById('timer').innerText = timeStr;
+                set(ref(db, 'presentation/timer'), time);
+            }, 1000);
+        }
+        window.pauseTimer = () => { clearInterval(interval); interval = null; }
+        
+        window.resetTimer = () => { 
+            pauseTimer();
+            time = 0; 
+            document.getElementById('timer').innerText = "00:00"; 
+            set(ref(db, 'presentation/timer'), 0); 
+        }
+
+        window.changeSlide = (dir) => {
+            if(slideList.length > 0) {
+                let next = currentSlide + dir;
+                if(next < 1) next = 1;
+                if(next > slideList.length) next = slideList.length;
+                currentSlide = next;
+                updateView();
+            }
+        }
+
+        window.setTool = (tool) => {
+            currentTool = tool;
+            document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
+            if(tool === 'pen') document.getElementById('btnPen').classList.add('active');
+            if(tool === 'highlighter') document.getElementById('btnHighlighter').classList.add('active');
+            if(tool === 'text') document.getElementById('btnText').classList.add('active');
+            if(tool === 'eraser') document.getElementById('btnEraser').classList.add('active');
+            const palette = document.getElementById('color-palette');
+            palette.style.display = (tool === 'eraser') ? 'none' : 'flex';
+
+            const slider = document.getElementById('size-control');
+            slider.style.display = 'flex';
+            const rng = document.getElementById('toolSize');
+            if(tool === 'pen') { rng.min=5; rng.max=40; rng.value = 10; currentSize = 10; }
+            if(tool === 'highlighter') { rng.min=20; rng.max=100; rng.value = 50; currentSize = 50; }
+            if(tool === 'text') { rng.min=20; rng.max=120; rng.value = 40; currentSize = 40; }
+            if(tool === 'eraser') { rng.min=20; rng.max=200; rng.value = 50; currentSize = 50; }
+            updateCursor();
+        }
+
+        window.setColor = (color, btn) => {
+            currentColor = color;
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            btn.classList.add('active');
+            const txtBox = document.getElementById('textInput');
+            if(txtBox.style.display === 'block') { txtBox.style.color = currentColor; txtBox.style.borderColor = currentColor; }
+            updateCursor();
+        }
+
+        window.setSize = (val) => {
+            currentSize = parseInt(val);
+            const txtBox = document.getElementById('textInput');
+            if(txtBox.style.display === 'block') { txtBox.style.fontSize = (currentSize * (canvas.offsetWidth / RENDER_W)) + 'px'; }
+            updateCursor();
+        }
+
+        function updateCursor() {
+            if(currentTool === 'text') { canvas.style.cursor = "text"; return; }
+            let color = (currentTool === 'eraser') ? 'white' : currentColor;
+            let fill = (currentTool === 'eraser') ? 'rgba(0,0,0,0.5)' : color;
+            let stroke = 'white';
+            let displayScale = canvas.offsetWidth / RENDER_W;
+            let size = currentSize * displayScale;
+            let boxSize = Math.max(32, size * 2 + 8); 
+            let center = boxSize / 2;
+            let radius = Math.max(2, size / 2);
+            const svg = `<svg width="${boxSize}" height="${boxSize}" viewBox="0 0 ${boxSize} ${boxSize}" xmlns="http://www.w3.org/2000/svg"><circle cx="${center}" cy="${center}" r="${radius}" stroke="${stroke}" stroke-width="2" fill="none" opacity="0.8"/><circle cx="${center}" cy="${center}" r="${radius}" fill="${fill}" opacity="0.5"/></svg>`;
+            const base64Svg = btoa(svg);
+            canvas.style.cursor = `url('data:image/svg+xml;base64,${base64Svg}') ${center} ${center}, crosshair`;
+        }
+        
+        function updateContainerLayout() {
+            const wrapper = document.getElementById('preview-wrapper');
+            const container = document.getElementById('preview-container');
+            if (!wrapper || !container) return;
+            const w = wrapper.clientWidth;
+            const h = wrapper.clientHeight;
+            const targetRatio = 1920 / 1080;
+            const wrapperRatio = w / h;
+            if (wrapperRatio > targetRatio) {
+                container.style.height = h + 'px';
+                container.style.width = (h * targetRatio) + 'px';
+            } else {
+                container.style.width = w + 'px';
+                container.style.height = (w / targetRatio) + 'px';
+            }
+            resizeCanvas();
+        }
+        window.addEventListener('resize', updateContainerLayout);
+        setTimeout(updateContainerLayout, 100);
+        function resizeCanvas() { 
+            canvas.width = RENDER_W;
+            canvas.height = RENDER_H; 
+            redrawCanvas(); 
+        }
+
+        canvas.addEventListener('mousedown', startAction);
+        canvas.addEventListener('mousemove', moveAction);
+        window.addEventListener('mouseup', endAction);
+        window.addEventListener('mousedown', (e) => {
+            const input = document.getElementById('textInput');
+            if (input.style.display === 'block' && e.target !== input) {
+                if (input.value.trim() === "") { input.style.display = 'none'; } else { input.style.display = 'none'; input.value = ''; }
+            }
+        });
+        function getCoordinates(e) { return { x: e.offsetX / canvas.offsetWidth, y: e.offsetY / canvas.offsetHeight }; }
+
+        function startAction(e) {
+            if (currentTool === 'text') { handleTextTool(e); return; }
+            isDrawing = true; currentPath = [];
+            const coords = getCoordinates(e); currentPath.push(coords); drawLocalStroke(); 
+        }
+
+        function moveAction(e) {
+            if (!isDrawing) return;
+            const coords = getCoordinates(e); currentPath.push(coords); drawLocalStroke(); 
+        }
+
+        function endAction() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            if (currentPath.length > 0) { push(ref(db, 'presentation/drawing'), { type: 'path', points: currentPath, tool: currentTool, color: currentColor, slide: currentSlide, size: currentSize }); }
+        }
+
+        function drawLocalStroke() {
+            if (currentPath.length < 2) return;
+            ctx.save(); ctx.beginPath(); ctx.lineWidth = currentSize;
+            if (currentTool === 'highlighter') { ctx.globalAlpha = 0.5; ctx.strokeStyle = currentColor; ctx.globalCompositeOperation = 'source-over'; } 
+            else if (currentTool === 'eraser') { ctx.globalAlpha = 1.0; ctx.strokeStyle = 'rgba(0,0,0,1)'; ctx.globalCompositeOperation = 'destination-out'; } 
+            else { ctx.globalAlpha = 1.0; ctx.strokeStyle = currentColor; ctx.globalCompositeOperation = 'source-over'; }
+            ctx.lineCap = 'round';
+            const last = currentPath[currentPath.length - 2]; const curr = currentPath[currentPath.length - 1];
+            ctx.moveTo(last.x * RENDER_W, last.y * RENDER_H);
+            ctx.lineTo(curr.x * RENDER_W, curr.y * RENDER_H);
+            ctx.stroke(); ctx.restore();
+        }
+
+        function handleTextTool(e) {
+            e.stopPropagation();
+            const input = document.getElementById('textInput');
+            const inputHeight = 30; 
+            input.style.display = 'block'; 
+            input.style.left = e.offsetX + 'px';
+            input.style.top = (e.offsetY - (inputHeight / 2)) + 'px'; 
+            input.style.color = currentColor;
+            input.style.fontSize = (currentSize * (canvas.offsetWidth / RENDER_W)) + 'px'; 
+            input.style.borderColor = currentColor;
+            input.value = ''; 
+            setTimeout(() => input.focus(), 100);
+            const xNorm = e.offsetX / canvas.offsetWidth; 
+            const yNorm = e.offsetY / canvas.offsetHeight; 
+            
+            input.onkeydown = null;
+            input.onkeydown = (keyEvent) => {
+                if (keyEvent.key === 'Enter') {
+                    if (input.value.trim() !== "") { push(ref(db, 'presentation/drawing'), { type: 'text', text: input.value, x: xNorm, y: yNorm, color: currentColor, slide: currentSlide, size: currentSize }); }
+                    input.style.display = 'none';
+                }
+                if (keyEvent.key === 'Escape') { input.style.display = 'none'; input.value = ''; }
+            };
+        }
+
+        onValue(ref(db, 'presentation/drawing'), (snapshot) => {
+            allDrawingData = []; 
+            if(snapshot.exists()) { snapshot.forEach((childSnap) => { allDrawingData.push({ ...childSnap.val(), ref: childSnap.ref }); }); }
+            redrawCanvas(); 
+        });
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            allDrawingData.forEach(data => {
+                if (data.slide !== currentSlide) return;
+                const size = data.size || (data.tool === 'highlighter' ? 40 : (data.tool === 'eraser' ? 50 : 10));
+                
+                if (data.type === 'path') {
+                    ctx.save(); 
+                    ctx.beginPath(); 
+                    ctx.lineWidth = size;
+                    
+                    if (data.tool === 'highlighter') { 
+                        ctx.globalAlpha = 0.5; 
+                        ctx.strokeStyle = data.color || 'yellow'; 
+                        ctx.globalCompositeOperation = 'source-over'; 
+                    } else if (data.tool === 'eraser') { 
+                        ctx.globalAlpha = 1.0; 
+                        ctx.strokeStyle = 'rgba(0,0,0,1)'; 
+                        ctx.globalCompositeOperation = 'destination-out'; 
+                    } else { 
+                        ctx.globalAlpha = 1.0; 
+                        ctx.strokeStyle = data.color || 'red'; 
+                        ctx.globalCompositeOperation = 'source-over'; 
+                    }
+                    
+                    ctx.lineCap = 'round';
+                    const points = data.points ? Object.values(data.points) : [];
+                    if(points.length > 0) {
+                        ctx.moveTo(points[0].x * RENDER_W, points[0].y * RENDER_H);
+                        for (let i = 1; i < points.length; i++) { ctx.lineTo(points[i].x * RENDER_W, points[i].y * RENDER_H); }
+                    }
+                    ctx.stroke();
+                    ctx.restore(); 
+                } else if (data.type === 'text') {
+                    ctx.save();
+                    const fontSize = data.size || 40; ctx.fillStyle = data.color || 'red'; ctx.font = `bold ${fontSize}px Inter, sans-serif`; 
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(data.text, data.x * RENDER_W, data.y * RENDER_H);
+                    ctx.restore();
+                }
+            });
+        }
+
+        window.undoLast = () => { for (let i = allDrawingData.length - 1; i >= 0; i--) { if (allDrawingData[i].slide === currentSlide) { remove(allDrawingData[i].ref); return; } } }
+        window.clearCanvas = (sync) => { if(sync) { allDrawingData.forEach(d => { if (d.slide === currentSlide) remove(d.ref); }); } }
+
+        window.toggleTheme = () => { document.body.classList.toggle('dark-mode'); }
+        window.toggleFullScreen = () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function saveSession() {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: Date.now(), version: sessionVersion }));
+        }
+        setInterval(saveSession, 60 * 1000);
+        function startNewSession(isRestore = false) {
+            console.log("🚀 Starting Session. Restore Mode:", isRestore);
+            if (!isRestore) {
+                remove(ref(db, 'presentation/drawing'));
+                set(ref(db, 'presentation/currentSlide'), 1);
+                currentSlide = 1;
+                updateStatus('online');
+            } else {
+                get(ref(db, 'presentation/currentSlide')).then(snap => {
+                    if(snap.exists()) {
+                        currentSlide = snap.val();
+                        updateView();
+                    }
+                });
+            }
+
+            // --- CALL SYNC ON LOAD (FAST MODE) ---
+            startSync(false);
+            onValue(ref(db, 'presentation/message'), (snapshot) => {
+                const box = document.getElementById('notification-box');
+                const txt = document.getElementById('notif-text');
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    txt.innerText = data.text;
+                    box.style.display = 'flex';
+                } else { box.style.display = 'none'; }
+            });
+            onValue(ref(db, 'presentation/status'), (snapshot) => {
+                const data = snapshot.val();
+                const btn = document.getElementById('btnBlackout');
+                if (data && data.state === 'offline') {
+                    if(!isBlackout) {
+                        btn.innerHTML = "🔴 SCREEN IS OFF";
+                        btn.style.background = "#0f172a"; 
+                        btn.style.color = "#cbd5e1";
+                        isBlackout = true;
+                    }
+                } else {
+                    if(isBlackout) {
+                        btn.innerHTML = "🟢 SCREEN IS LIVE";
+                        btn.style.background = "var(--success)";
+                        btn.style.color = "white";
+                        isBlackout = false;
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(document.getElementById('textInput').style.display === 'block') return; 
+            if (e.key === "ArrowLeft") changeSlide(-1);
+            if (e.key === "ArrowRight" || e.key === " ") changeSlide(1);
+        });
+
+        window.onbeforeunload = function (e) {
+            e.preventDefault();
+            return undefined; 
+        };
+    </script>
+</body>
+</html>
