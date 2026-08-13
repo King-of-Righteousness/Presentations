@@ -1,0 +1,619 @@
+ <!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Audience Presentation (Pro Video Vault)</title> 
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@600;700;800&family=Oswald:wght@500;700&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@500;600;700;800&family=Roboto:wght@500;700;900&display=swap" rel="stylesheet"> 
+    
+    <style> 
+        * { box-sizing: border-box; } 
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; position: relative; font-family: 'Inter', sans-serif; } 
+        @keyframes korPulse { 0%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} 50%{transform:scale(1.05);box-shadow:0 0 20px rgba(139, 92, 246,0.3)} 100%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} } 
+        .korLogo { width: 64px; height: 64px; border-radius: 16px; background: #1e293b; display: grid; place-items: center; margin: 0 auto 20px; animation: korPulse 3s ease-in-out infinite; border: 1px solid rgba(255,255,255,0.1); } 
+        .korLogo img { width: 40px; height: 40px; border-radius: 6px; display: block; } 
+        
+        #container { position: absolute; inset: 0; margin: auto; aspect-ratio: 16 / 9; width: 100%; height: 100%; max-width: 177.78vh; max-height: 56.25vw; background: #000; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); } 
+        #slide-backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4; transition: opacity 0.5s ease-in-out; opacity: 1; }
+        #container.offline-mode #slide-backdrop { opacity: 0; }
+        .gpu-accelerated { will-change: transform, opacity; transform: translate3d(0, 0, 0); -webkit-backface-visibility: hidden; backface-visibility: hidden; perspective: 1000px; }
+        
+        #bg-video-layer, #bg-image-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; display: none; background: black; object-fit: cover; }
+
+        .slide-layer { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 6; opacity: 0; } 
+        .slide-visible { opacity: 1; z-index: 7; }
+
+        #native-text-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9; 
+            display: none; flex-direction: column; justify-content: center; 
+            padding: 0 6%; box-sizing: border-box;
+        }
+        #native-text-content {
+            white-space: pre-wrap; width: 100%; font-weight: bold; line-height: 1.4;
+            text-shadow: 0px 4px 20px rgba(0,0,0,0.9), 0px 2px 5px rgba(0,0,0,0.9), 0px 0px 10px rgba(0,0,0,0.8);
+        }
+        #native-text-reference {
+            margin-top: 40px; text-align: center; color: #FACC15; font-weight: bold;
+            text-shadow: 0px 4px 15px rgba(0,0,0,0.9), 0px 2px 5px rgba(0,0,0,0.9);
+        }
+
+        #container.offline-mode .slide-layer, #container.offline-mode #native-text-layer { opacity: 0 !important; transition: none !important; }
+        img[src=""], img:not([src]) { opacity: 0 !important; visibility: hidden; }
+        #audienceCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; } 
+        
+        #init-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 20000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; transition: opacity 0.4s ease; }
+        .pulse-btn { background: rgba(255,255,255,0.1); padding: 12px 30px; border-radius: 50px; font-weight: 600; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.2); margin-top: 20px; animation: glow 2s infinite; }
+        @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.2); } 50% { box-shadow: 0 0 0 15px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+
+        #loading-overlay, #offline-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; text-align: center; } 
+        .glass-box { background: rgba(30, 41, 59, 0.85); padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); max-width: 400px; width: 90%; display: flex; flex-direction: column; align-items: center; } 
+        .health-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; margin-top: 24px; overflow: hidden; position: relative; } 
+        .health-bar-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981); width: 100%; border-radius: 999px; animation: drainHealth 10s linear infinite; } 
+        @keyframes drainHealth { 0% { width: 100%; } 100% { width: 0%; } }
+        
+        .smpte-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; z-index: 1; pointer-events: none; }
+        .top-bars { height: 67%; display: flex; width: 100%; } .middle-bars { height: 8%; display: flex; width: 100%; } .bottom-bars { height: 25%; display: flex; width: 100%; }
+        .bar, .m-bar { flex: 1; height: 100%; }
+        .c-gray { background-color: #c0c0c0; } .c-yellow { background-color: #bfbf00; } .c-cyan { background-color: #00bfbf; } .c-green { background-color: #00bf00; } .c-magenta { background-color: #bf00bf; } .c-red { background-color: #bf0000; } .c-blue { background-color: #0000bf; } .c-black { background-color: #131313; }
+        .b-navy { background-color: #00214c; width: 18.3%; } .b-white { background-color: #ffffff; width: 18.3%; } .b-purple { background-color: #32006a; width: 18.3%; } .b-black { background-color: #131313; width: 45.1%; }
+        .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1)); background-size: 100% 4px; z-index: 2; pointer-events: none; }
+        
+        #fs-toggle { position: fixed; bottom: 30px; right: 30px; z-index: 2000; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px; color: white; cursor: pointer; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease, transform 0.4s ease, background 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        #fs-toggle.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        #fs-toggle:hover { background: rgba(30, 41, 59, 0.9); border-color: rgba(255, 255, 255, 0.4); }
+        
+        #passcode-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
+        .pin-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px 20px; font-size: 24px; letter-spacing: 10px; text-align: center; border-radius: 12px; width: 240px; outline: none; font-family: 'JetBrains Mono', monospace; margin-top: 20px; transition: all 0.2s; }
+        .pin-input:focus { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
+        .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: #ef4444 !important; background: rgba(239, 68, 68, 0.1) !important; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } }
+
+        /* Mobile Portrait View Adjustments */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #native-text-content {
+                font-size: clamp(16px, calc(var(--text-size) * 0.35), 8vw) !important;
+            }
+            #native-text-reference {
+                font-size: clamp(12px, calc(var(--ref-size) * 0.35), 5vw) !important;
+                margin-top: 15px !important;
+            }
+        }
+    </style> 
+</head> 
+<body> 
+
+    <div id="init-overlay">
+        <div class="korLogo"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" /></div>
+        <h2 style="font-size: 1.8rem; margin: 0; font-weight: 700; letter-spacing: 1px;">Audience View</h2>
+        <div class="pulse-btn">Click to Start</div>
+    </div>
+
+    <div id="passcode-overlay">
+        <div class="glass-box" style="border-color: rgba(34, 197, 94, 0.3);">
+            <div class="korLogo" style="margin-bottom: 25px;"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" /></div>
+            <h2 style="color: #fff; font-size: 1.2rem; font-weight: 600; letter-spacing: 1px; margin: 0; text-transform: uppercase;">Secure Access</h2>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 5px; margin-bottom: 5px;">Enter today's access code</p>
+            <input type="tel" id="pinEntry" class="pin-input" maxlength="6" placeholder="000000" autocomplete="off" />
+            <p id="pinStatus" style="color: #64748b; font-size: 11px; margin-top: 15px; height: 16px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;"></p>
+        </div>
+    </div>
+ 
+    <div id="offline-overlay"> 
+        <div class="glass-box"> 
+            <div class="korLogo"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" /></div> 
+            <h1 style="color:#e5e7eb; margin:0; font-size:1.5rem;">Please Wait...</h1> 
+            <p style="color:#9ca3af; margin-top:8px;">The presentation will begin shortly.</p> 
+            <div class="health-bar-container"><div class="health-bar-fill"></div></div> 
+        </div> 
+    </div> 
+ 
+    <div id="container">
+        <div class="smpte-layer">
+            <div class="top-bars"><div class="bar c-gray"></div><div class="bar c-yellow"></div><div class="bar c-cyan"></div><div class="bar c-green"></div><div class="bar c-magenta"></div><div class="bar c-red"></div><div class="bar c-blue"></div></div>
+            <div class="middle-bars"><div class="m-bar c-blue"></div><div class="m-bar c-black"></div><div class="m-bar c-magenta"></div><div class="m-bar c-black"></div><div class="m-bar c-cyan"></div><div class="m-bar c-black"></div><div class="m-bar c-gray"></div></div>
+            <div class="bottom-bars"><div class="b-navy"></div><div class="b-white"></div><div class="b-purple"></div><div class="b-black"></div></div>
+        </div>
+        
+        <div class="scanlines"></div>
+        <div id="slide-backdrop"></div>
+
+        <video id="bg-video-layer" class="gpu-accelerated" loop playsinline autoplay muted></video>
+        <img id="bg-image-layer" class="gpu-accelerated">
+
+        <div id="youtube-wrapper" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:8; display:none; background:black; pointer-events:none;">
+            <div id="youtube-layer"></div>
+        </div>
+
+        <video id="video-layer" class="gpu-accelerated" loop playsinline style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:8; display:none; background:black; object-fit:contain;"></video>
+
+        <img id="slide-A" class="slide-layer slide-visible gpu-accelerated" src="" style="z-index: 7;"> 
+        <img id="slide-B" class="slide-layer gpu-accelerated" src="" style="z-index: 6;"> 
+     
+        <div id="native-text-layer">
+            <div id="native-text-content"></div>
+            <div id="native-text-reference"></div>
+        </div>
+
+        <canvas id="audienceCanvas" class="gpu-accelerated"></canvas> 
+    </div> 
+
+    <button id="fs-toggle" title="Toggle Fullscreen">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+    </button>
+ 
+    <script type="module"> 
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, push, onDisconnect, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA", 
+            authDomain: "slidesync-37cd4.firebaseapp.com", 
+            databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app", 
+            projectId: "slidesync-37cd4", 
+            storageBucket: "slidesync-37cd4.firebasestorage.app", 
+            messagingSenderId: "996754972458", 
+            appId: "1:996754972458:web:7f8be6880c3463ac6a4853", 
+            measurementId: "G-GCBS3X7STT" 
+        };
+        
+        const app = initializeApp(firebaseConfig); 
+        const db = getDatabase(app); 
+		
+		// --- THE REMOTE STATUS REPORTER ---
+// This runs in the background of the projector screen
+setInterval(() => {
+    if (!isVideoPlaying) return;
+    
+    let currentTime = 0, duration = 1, percent = 0;
+    const vL = document.getElementById('video-layer');
+    const ytW = document.getElementById('youtube-wrapper');
+
+    // 1. Check if local MP4 is playing and report its time
+    if (vL.style.display !== 'none' && !vL.paused) {
+        currentTime = vL.currentTime; 
+        duration = vL.duration;
+        percent = (currentTime / duration) * 100;
+    } 
+    // 2. Check if YouTube is playing and report its time
+    else if (ytW.style.display !== 'none' && ytPlayer && ytPlayer.getPlayerState() === 1) {
+        currentTime = ytPlayer.getCurrentTime(); 
+        duration = ytPlayer.getDuration();
+        percent = (currentTime / duration) * 100;
+    } else { return; }
+
+    // 3. Send this info to Firebase so the Presenter Dashboard can see it!
+    set(ref(db, 'presentation/video_status'), { 
+        time: currentTime, 
+        percent: percent, 
+        timestamp: Date.now() 
+    });
+}, 500); // Reports every half-second
+ 
+        // --- YOUTUBE API SETUP ---
+        let ytPlayer = null;
+        window.onYouTubeIframeAPIReady = function() {
+            ytPlayer = new YT.Player('youtube-layer', {
+                height: '100%',
+                width: '100%',
+                videoId: '',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0, // Hides player controls
+                    'disablekb': 1, // Stops audience from skipping ahead
+                    'fs': 0,
+                    'modestbranding': 1, // Removes YouTube logo
+                    'rel': 0, // Stops related videos at the end
+                    'showinfo': 0,
+                    'iv_load_policy': 3
+                }
+            });
+        };
+
+        // Inject YouTube Script Safely
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+
+        // --- SECURE PRESENCE OBJECT ---
+        const myPresence = push(ref(db, 'presentation/presence/audience'));
+        onDisconnect(myPresence).remove();
+
+        const initOverlay = document.getElementById('init-overlay');
+        const pinInput = document.getElementById('pinEntry');
+        const pinOverlay = document.getElementById('passcode-overlay');
+        const pinStatus = document.getElementById('pinStatus');
+
+        initOverlay.addEventListener('click', () => {
+            const vLayer = document.getElementById('video-layer');
+            const bgVLayer = document.getElementById('bg-video-layer');
+            vLayer.play().then(() => vLayer.pause()).catch(e => {});
+            bgVLayer.play().then(() => bgVLayer.pause()).catch(e => {});
+
+            initOverlay.style.opacity = '0';
+            setTimeout(() => {
+                initOverlay.style.display = 'none';
+                if (sessionStorage.getItem('kor_access_granted') === 'true') {
+                    set(myPresence, true);
+                } else {
+                    pinOverlay.style.display = 'flex';
+                    setTimeout(() => pinInput.focus(), 100);
+                }
+            }, 400);
+        });
+
+        pinInput.addEventListener('keyup', async (e) => {
+            const code = e.target.value;
+            if (code.length === 6) {
+                pinInput.blur(); pinStatus.innerText = "VERIFYING...";
+                try {
+                    const snapshot = await get(ref(db, 'presentation/access/passcode'));
+                    const serverData = snapshot.val();
+                    if (serverData && String(serverData.code) === String(code)) {
+                        pinStatus.style.color = "#22c55e"; pinStatus.innerText = "ACCESS GRANTED";
+                        sessionStorage.setItem('kor_access_granted', 'true');
+                        pinOverlay.style.opacity = '0';
+                        setTimeout(() => { pinOverlay.style.display = 'none'; set(myPresence, true); }, 500);
+                    } else { throw new Error("Invalid Code"); }
+                } catch (error) {
+                    pinStatus.style.color = "#ef4444"; pinStatus.innerText = "INVALID PASSCODE"; pinInput.classList.add('error-shake');
+                    setTimeout(() => { pinInput.classList.remove('error-shake'); pinInput.value = ""; pinInput.focus(); pinStatus.innerText = ""; }, 1500);
+                }
+            }
+        });
+
+        let localDbInstance = null;
+        const vaultRequest = indexedDB.open("SlideMirrorVault", 2); 
+        vaultRequest.onupgradeneeded = (e) => { 
+            const database = e.target.result;
+            if(!database.objectStoreNames.contains("mirrors")) database.createObjectStore("mirrors"); 
+            if(!database.objectStoreNames.contains("videos")) database.createObjectStore("videos"); 
+        };
+        vaultRequest.onsuccess = (e) => { localDbInstance = e.target.result; };
+
+        async function getDb() {
+            if (localDbInstance) return localDbInstance;
+            return new Promise((resolve) => {
+                if (vaultRequest.readyState === "done") resolve(vaultRequest.result);
+                else vaultRequest.addEventListener('success', (e) => resolve(e.target.result));
+            });
+        }
+
+        async function saveVideoToVault(id, blob) { 
+            const dbInstance = await getDb();
+            dbInstance.transaction("videos", "readwrite").objectStore("videos").put(blob, id); 
+        } 
+ 
+        async function getVideoFromVault(id) { 
+            const dbInstance = await getDb();
+            return new Promise(r => { const req = dbInstance.transaction("videos").objectStore("videos").get(id); req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
+        } 
+ 
+        const canvas = document.getElementById('audienceCanvas'); 
+        const ctx = canvas.getContext('2d');
+        let currentSlide = 1; 
+        let allDrawingData = []; 
+        let activeLayer = 'A'; 
+        let isVideoPlaying = false; 
+
+        const RENDER_W = 1920; const RENDER_H = 1080;
+        
+        function resizeCanvas() { canvas.width = RENDER_W; canvas.height = RENDER_H; redrawCanvas(); } 
+        window.addEventListener('resize', resizeCanvas); setTimeout(resizeCanvas, 500);
+        document.addEventListener('keydown', (e) => { if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'v') { toggleFS(); } });
+
+        onValue(ref(db, 'presentation/status'), (snapshot) => { 
+            const data = snapshot.val(); 
+            const isOnline = (data && data.state === 'online');
+            document.getElementById('offline-overlay').style.display = isOnline ? 'none' : 'flex';
+            if (isOnline) { document.getElementById('container').classList.remove('offline-mode'); } 
+            else { document.getElementById('container').classList.add('offline-mode'); }
+        });
+
+const handlePlayError = (e) => {
+    // Ignore AbortError (caused by fast slide/video switching or buffering)
+    if (e.name === 'AbortError') return; 
+
+    if (e.name === 'NotAllowedError' && !document.getElementById('unlock-overlay')) {
+        const unlockBtn = document.createElement('div');
+        unlockBtn.id = 'unlock-overlay';
+        unlockBtn.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; cursor:pointer;";
+        unlockBtn.innerHTML = `<span style="font-size:4rem; margin-bottom:15px;">🔇</span><h1 style="margin:0; color:#ef4444;">Playback Blocked by Browser</h1><p style="color:#cbd5e1; font-size:1.2rem;">Click anywhere on this screen to enable video and audio.</p>`;
+        
+        unlockBtn.onclick = () => { 
+            const vL = document.getElementById('video-layer');
+            if (vL.src && vL.style.display !== 'none') {
+                // Added catch to handle secondary failures dynamically
+                vL.play().catch(err => {
+                    if (err.name !== 'AbortError') handlePlayError(err);
+                });
+            }
+            unlockBtn.remove(); 
+        };
+        document.body.appendChild(unlockBtn);
+    }
+};
+
+        const videoLayer = document.getElementById('video-layer');
+        const ytWrapper = document.getElementById('youtube-wrapper');
+        const activeVideoCache = new Map(); 
+
+        onValue(ref(db, 'presentation/background'), async (snapshot) => {
+            const bgData = snapshot.val();
+            if (!bgData || bgData.state === 'stop') {
+                document.getElementById('bg-video-layer').style.display = 'none'; 
+                document.getElementById('bg-video-layer').pause(); 
+                document.getElementById('bg-video-layer').src = "";
+                document.getElementById('bg-image-layer').style.display = 'none'; 
+                document.getElementById('bg-image-layer').src = "";
+                return;
+            }
+
+            let finalSrc = bgData.src;
+            let vidId = "bg_" + bgData.type + "_remote";
+
+            if (bgData.src.startsWith('db_key:')) {
+                const fKey = bgData.src.split(':')[1];
+                vidId = "bg_" + fKey;
+                let playableSrc = activeVideoCache.get(vidId);
+                if (!playableSrc) {
+                    const cachedBlob = await getVideoFromVault(vidId);
+                    if (cachedBlob) {
+                        playableSrc = URL.createObjectURL(cachedBlob);
+                        activeVideoCache.set(vidId, playableSrc);
+                    } else {
+                        const snap = await get(ref(db, 'permanent_local_media/' + fKey));
+                        if (snap.exists() && snap.val().src) {
+                            const base64Str = snap.val().src;
+                            try {
+                                const res = await fetch(base64Str); const blob = await res.blob();
+                                playableSrc = URL.createObjectURL(blob);
+                                activeVideoCache.set(vidId, playableSrc); saveVideoToVault(vidId, blob); 
+                            } catch(e) { playableSrc = base64Str; }
+                        }
+                    }
+                }
+                if (playableSrc) finalSrc = playableSrc;
+            }
+
+            if (bgData.type === 'video') {
+                document.getElementById('bg-image-layer').style.display = 'none'; 
+                document.getElementById('bg-video-layer').style.display = 'block';
+                if (document.getElementById('bg-video-layer').src !== finalSrc) document.getElementById('bg-video-layer').src = finalSrc;
+                document.getElementById('bg-video-layer').play().catch(e => console.log("BG Autoplay Blocked:", e));
+            } else if (bgData.type === 'image') {
+                document.getElementById('bg-video-layer').style.display = 'none'; 
+                document.getElementById('bg-video-layer').pause(); 
+                document.getElementById('bg-image-layer').style.display = 'block';
+                if (document.getElementById('bg-image-layer').src !== finalSrc) document.getElementById('bg-image-layer').src = finalSrc;
+            }
+        });
+        
+        // --- FOREGROUND MULTI-PLAYER (NATIVE + YOUTUBE) ---
+        onValue(ref(db, 'presentation/video'), async (snapshot) => {
+            const vData = snapshot.val();
+            
+            if (!vData || vData.state === 'stop') {
+                isVideoPlaying = false; 
+                videoLayer.style.display = 'none'; 
+                videoLayer.pause(); 
+                videoLayer.src = ""; 
+                
+                // Hide and Stop YouTube
+                ytWrapper.style.display = 'none';
+                if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+                return;
+            }
+
+            if (vData.state === 'play') {
+                isVideoPlaying = true; 
+
+                // 1. YOUTUBE ENGINE
+                if (vData.type === 'youtube') {
+                    videoLayer.style.display = 'none';
+                    videoLayer.pause();
+                    document.getElementById('slide-A').classList.remove('slide-visible');
+                    document.getElementById('slide-B').classList.remove('slide-visible');
+                    document.getElementById('native-text-layer').style.display = 'none';
+                    
+                    ytWrapper.style.display = 'block';
+if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+    // Only load if the Video ID is actually different!
+    const currentUrl = ytPlayer.getVideoUrl();
+    if (!currentUrl.includes(vData.src)) {
+        ytPlayer.loadVideoById(vData.src);
+    } else if (vData.state === 'play') {
+        ytPlayer.playVideo(); // If same video, just ensure it's playing
+    }
+}
+                    return;
+                }
+
+                // 2. NATIVE MP4 ENGINE
+                if (vData.type === 'video') {
+                    if (vData.src === 'canvas_only') { isVideoPlaying = false; videoLayer.style.display = 'none'; return; }
+
+                    // Hide YouTube
+                    ytWrapper.style.display = 'none';
+                    if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+
+                    videoLayer.style.display = 'block';
+                    let finalSrc = vData.src; let vidId = "vid_remote";
+
+                    if (vData.src.startsWith('db_key:')) {
+                        const fKey = vData.src.split(':')[1]; vidId = "vid_" + fKey;
+                        let playableSrc = activeVideoCache.get(vidId);
+                        if (!playableSrc) {
+                            const cachedBlob = await getVideoFromVault(vidId);
+                            if (cachedBlob) {
+                                playableSrc = URL.createObjectURL(cachedBlob); activeVideoCache.set(vidId, playableSrc);
+                            } else {
+                                const snap = await get(ref(db, 'permanent_local_media/' + fKey));
+                                if (snap.exists() && snap.val().src) {
+                                    const base64Str = snap.val().src;
+                                    try {
+                                        const res = await fetch(base64Str); const blob = await res.blob();
+                                        playableSrc = URL.createObjectURL(blob);
+                                        activeVideoCache.set(vidId, playableSrc); saveVideoToVault(vidId, blob); 
+                                    } catch(e) { playableSrc = base64Str; }
+                                }
+                            }
+                        }
+                        if (playableSrc) finalSrc = playableSrc;
+                    }
+
+if (finalSrc && videoLayer.src !== finalSrc) { 
+    // 1. Attach the listener first to prevent race conditions with cached blobs
+    videoLayer.onloadeddata = () => {
+        document.getElementById('slide-A').classList.remove('slide-visible');
+        document.getElementById('slide-B').classList.remove('slide-visible');
+        document.getElementById('native-text-layer').style.display = 'none';
+        videoLayer.play().catch(handlePlayError);
+    };
+    
+    // 2. Assign the source second
+    videoLayer.src = finalSrc; 
+} else {
+    document.getElementById('slide-A').classList.remove('slide-visible');
+    document.getElementById('slide-B').classList.remove('slide-visible');
+    document.getElementById('native-text-layer').style.display = 'none';
+    videoLayer.play().catch(handlePlayError);
+}
+                }
+            } 
+            else if (vData.state === 'pause') { 
+                videoLayer.pause(); 
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') ytPlayer.pauseVideo();
+            } 
+            else if (vData.state === 'seek') { 
+                videoLayer.currentTime = vData.time; 
+                // YouTube seeks based on seconds, not percentages
+                if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+                    const dur = ytPlayer.getDuration();
+                    ytPlayer.seekTo((vData.time / 100) * dur, true); 
+                }
+            }
+        });
+
+        const nativeTextLayer = document.getElementById('native-text-layer');
+        const nativeTextContent = document.getElementById('native-text-content');
+        const nativeTextRef = document.getElementById('native-text-reference');
+
+        onValue(ref(db, 'presentation/text'), (snapshot) => {
+            const data = snapshot.val();
+            if (!data || !data.text) {
+                nativeTextLayer.style.display = 'none';
+                return;
+            }
+
+            nativeTextLayer.style.display = 'flex';
+            nativeTextLayer.style.backgroundColor = data.bg === 'transparent' ? 'transparent' : data.bg;
+            nativeTextLayer.style.alignItems = data.align === 'left' ? 'flex-start' : 'center';
+            
+            nativeTextContent.style.textAlign = data.align;
+            nativeTextContent.style.color = data.color;
+            nativeTextContent.style.fontFamily = data.font;
+            
+            // Set CSS variables for mobile responsive sizing
+            nativeTextContent.style.setProperty('--text-size', data.size + 'px');
+            nativeTextContent.style.fontSize = 'var(--text-size)';
+            nativeTextContent.innerText = data.text;
+            
+            if (data.reference) {
+                nativeTextRef.style.fontFamily = data.font;
+                
+                // Set CSS variables for mobile responsive sizing
+                nativeTextRef.style.setProperty('--ref-size', Math.max(30, data.size * 0.4) + 'px');
+                nativeTextRef.style.fontSize = 'var(--ref-size)';
+                nativeTextRef.innerText = data.reference;
+                
+                nativeTextRef.style.display = 'block';
+            } else {
+                nativeTextRef.style.display = 'none';
+            }
+        });
+
+        onValue(ref(db, 'presentation/liveView'), (snapshot) => { 
+            const liveImageData = snapshot.val(); 
+            if (liveImageData) { updateDisplay(liveImageData); } 
+        });
+
+        function updateDisplay(data) { 
+            if (data === 'clear_image') {
+                document.getElementById('slide-A').classList.remove('slide-visible');
+                document.getElementById('slide-B').classList.remove('slide-visible');
+                return;
+            }
+
+            if (!isVideoPlaying) {
+                videoLayer.style.display = 'none';
+                videoLayer.pause();
+                ytWrapper.style.display = 'none';
+                if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+            }
+
+            const hiddenLayer = activeLayer === 'A' ? 'B' : 'A'; 
+            const hiddenImg = document.getElementById(`slide-${hiddenLayer}`); 
+            const activeImg = document.getElementById(`slide-${activeLayer}`); 
+            if (activeImg.src === data) return; 
+ 
+            hiddenImg.src = data;
+            hiddenImg.onload = () => { 
+                hiddenImg.classList.add('slide-visible'); 
+                activeImg.classList.remove('slide-visible'); 
+                activeImg.src = ""; 
+                activeLayer = hiddenLayer; 
+                redrawCanvas(); 
+            }; 
+        } 
+ 
+        onValue(ref(db, 'presentation/drawing'), (snapshot) => { 
+            allDrawingData = []; 
+            if (snapshot.exists()) { snapshot.forEach((childSnap) => { allDrawingData.push(childSnap.val()); }); } 
+            redrawCanvas(); 
+        });
+		
+		// This tells the projector to "turn the page" and clear old drawings
+        onValue(ref(db, 'presentation/currentSlide'), (snapshot) => {
+            if (snapshot.exists()) {
+                currentSlide = snapshot.val();
+                redrawCanvas(); 
+            }
+        });
+
+        function redrawCanvas() { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            allDrawingData.forEach(data => { 
+                if (data.slide && data.slide !== currentSlide) return; 
+                const size = data.size || (data.tool === 'highlighter' ? 40 : (data.tool === 'eraser' ? 50 : 10)); 
+                 
+                if (data.type === 'path') { 
+                    ctx.save(); ctx.beginPath(); ctx.lineWidth = size; 
+                    if (data.tool === 'highlighter') { ctx.globalAlpha = 0.5; ctx.strokeStyle = data.color || 'yellow'; ctx.globalCompositeOperation = 'source-over'; } 
+                    else if (data.tool === 'eraser') { ctx.globalAlpha = 1.0; ctx.strokeStyle = 'rgba(0,0,0,1)'; ctx.globalCompositeOperation = 'destination-out'; }  
+                    else { ctx.globalAlpha = 1.0; ctx.strokeStyle = data.color || 'red'; ctx.globalCompositeOperation = 'source-over'; } 
+                    ctx.lineCap = 'round'; const points = data.points ? Object.values(data.points) : []; 
+                    if(points.length > 0) { 
+                        ctx.moveTo(points[0].x * RENDER_W, points[0].y * RENDER_H);
+                        for (let i = 1; i < points.length; i++) { ctx.lineTo(points[i].x * RENDER_W, points[i].y * RENDER_H); } 
+                    } 
+                    ctx.stroke(); ctx.restore();  
+                } else if (data.type === 'text') { 
+                    ctx.save();
+                    const fontSize = data.size || 40; ctx.fillStyle = data.color || 'red';  
+                    ctx.font = `bold ${fontSize}px Inter, sans-serif`; ctx.textBaseline = 'top';
+                    ctx.fillText(data.text, data.x * RENDER_W, data.y * RENDER_H); ctx.restore(); 
+                } 
+            });
+        }
+
+        const fsBtn = document.getElementById('fs-toggle'); let idleTimer;
+        function showUI() { fsBtn.classList.add('visible'); clearTimeout(idleTimer); idleTimer = setTimeout(() => { fsBtn.classList.remove('visible'); }, 3000); }
+        function toggleFS() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => { console.log(e); }); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+        fsBtn.addEventListener('click', toggleFS); window.addEventListener('mousemove', showUI); window.addEventListener('touchstart', showUI); window.addEventListener('click', showUI); showUI();
+    </script> 
+</body> 
+</html>
