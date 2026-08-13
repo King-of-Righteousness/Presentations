@@ -4,6 +4,8 @@
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Audience Presentation (Pro Video Vault)</title> 
+	<!-- Add 'muted' to the video-layer HTML -->
+	<video id="video-layer" class="gpu-accelerated" loop playsinline muted style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:8; display:none; background:black; object-fit:contain;"></video>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@600;700;800&family=Oswald:wght@500;700&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@500;600;700;800&family=Roboto:wght@500;700;900&display=swap" rel="stylesheet"> 
     
     <style> 
@@ -466,16 +468,21 @@ if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
                     }
 
 if (finalSrc && videoLayer.src !== finalSrc) { 
-    // 1. Attach the listener first to prevent race conditions with cached blobs
-    videoLayer.onloadeddata = () => {
+    // 1. Use 'oncanplay' instead of 'onloadeddata' to ensure enough buffer exists
+    videoLayer.oncanplay = () => {
         document.getElementById('slide-A').classList.remove('slide-visible');
         document.getElementById('slide-B').classList.remove('slide-visible');
         document.getElementById('native-text-layer').style.display = 'none';
+        
+        // 2. Execute play and catch errors
         videoLayer.play().catch(handlePlayError);
     };
     
-    // 2. Assign the source second
+    // 3. Assign the new source
     videoLayer.src = finalSrc; 
+    
+    // 4. Force the browser to evaluate the new source immediately
+    videoLayer.load();
 } else {
     document.getElementById('slide-A').classList.remove('slide-visible');
     document.getElementById('slide-B').classList.remove('slide-visible');
