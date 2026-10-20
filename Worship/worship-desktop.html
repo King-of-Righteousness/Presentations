@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worship Console & Editor (Pro Suite)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@600;700;800&family=Oswald:wght@500;700&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-asm.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- Apply saved colour theme before first paint (no flash) -->
+    <script>
+        try { document.documentElement.setAttribute('data-theme', localStorage.getItem('worship-theme') || 'indigo'); }
+        catch (e) { document.documentElement.setAttribute('data-theme', 'indigo'); }
+    </script>
+</head>
+<body>
+
+    <div id="song-notification-toast"></div>
+
+    <!-- ══ LOGIN ══ -->
+    <div id="login-overlay">
+        <div class="glass-card">
+            <div class="login-head">
+                <div class="korLogo">
+                    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" style="width:42px; height:42px; border-radius:10px;" alt="L" />
+                </div>
+                <h1>Worship Console</h1>
+                <p class="login-sub">Multi-Role Access</p>
+            </div>
+
+            <div class="login-input-group">
+                <label class="login-label">Email Address</label>
+                <div class="login-field-container">
+                    <input id="loginEmail" type="email" class="styled-input" placeholder="user@example.com">
+                </div>
+            </div>
+
+            <div class="login-input-group">
+                <label class="login-label">Password</label>
+                <div class="login-field-container">
+                    <input id="loginPass" type="password" class="styled-input" placeholder="••••••••">
+                    <button type="button" class="eye-btn" onclick="togglePassword()" aria-label="Show or hide password">
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path id="eyePath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path id="eyePathOuter" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
+                <div style="text-align:right; margin-top:8px;">
+                    <button class="btn ghost" onclick="forgotPassword()">Forgot Password?</button>
+                </div>
+            </div>
+
+            <div id="loginMsg"></div>
+            <button id="loginBtn" class="login-btn-main">Log In</button>
+            <p class="login-foot">© KOR Management System</p>
+        </div>
+    </div>
+
+    <!-- ══ TOP BAR ══ -->
+    <div id="top-nav">
+        <div class="app-title">
+            <span class="app-logo">🎵</span> Worship Suite <span class="pro-badge">PRO</span>
+        </div>
+        <div class="mode-switch">
+            <div class="mode-btn active" id="tab-presenter" onclick="switchView('presenter')">📡 Presenter</div>
+            <div class="mode-btn" id="tab-editor" onclick="switchView('editor')">📝 Editor</div>
+            <div class="mode-btn" id="tab-library" onclick="switchView('library')">📚 Library</div>
+        </div>
+        <div class="theme-switch" id="theme-switch" role="group" aria-label="Colour theme">
+            <button type="button" class="theme-dot" data-theme="indigo" title="Indigo" aria-label="Indigo theme"></button>
+            <button type="button" class="theme-dot" data-theme="red" title="Red" aria-label="Red theme"></button>
+            <button type="button" class="theme-dot" data-theme="emerald" title="Emerald" aria-label="Emerald theme"></button>
+        </div>
+    </div>
+
+    <div id="app-container" style="opacity:0; pointer-events:none; transition: opacity 0.5s; display:flex; flex:1; overflow:hidden;">
+
+        <!-- ══ PRESENTER ══ -->
+        <div id="view-presenter">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="live-label"><span class="live-dot"></span>LIVE WORSHIP SONG</div>
+
+                    <div id="bible-section">
+                        <div class="bible-header" onclick="toggleBibleTools()">
+                            <span>📖 BIBLE</span>
+                            <div class="bible-header-actions">
+                                <button class="btn soft xs" onclick="event.stopPropagation(); fetchCloudBibles()" title="Load from Cloud">☁</button>
+                                <button class="btn xs" onclick="event.stopPropagation(); document.getElementById('bibleInput').click()">+</button>
+                                <span id="bible-toggle-icon">▼</span>
+                            </div>
+                        </div>
+
+                        <div id="bible-tools-container">
+                            <input type="file" id="bibleInput" accept=".xml,.sqlite,.db" style="display:none;" onchange="handleBibleUpload(this)">
+
+                            <select id="bible-version-select" onchange="switchBibleVersion(this.value)">
+                                <option value="" disabled selected>Select Version...</option>
+                            </select>
+
+                            <div class="bible-nav-row">
+                                <select id="bible-book" class="bible-select" onchange="onBookChange()">
+                                    <option value="" disabled selected>Book</option>
+                                </select>
+                                <select id="bible-chapter" class="bible-select narrow" onchange="onChapterChange()">
+                                    <option value="" disabled selected>Ch</option>
+                                </select>
+                                <select id="bible-verse" class="bible-select narrow" onchange="onVerseChange()">
+                                    <option value="" disabled selected>Vs</option>
+                                </select>
+                            </div>
+
+                            <div style="position:relative;">
+                                <input type="text" id="bible-search" class="bible-search-input" placeholder="Search..." disabled onkeyup="handleBibleSearch(this)">
+                                <div id="bible-suggestions"></div>
+                            </div>
+
+                            <button id="btnSaveBible" class="btn soft" style="width:100%; display:none;" onclick="saveBibleToDrive()">☁ Save to Drive</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="song-list" class="song-list-container"></div>
+            </div>
+
+            <div id="main-area">
+                <div id="video-controls" style="display:none;">
+                    <div class="player-label">🎥 PLAYER</div>
+                    <button class="btn" onclick="controlVideo('play')">▶</button>
+                    <button class="btn" onclick="controlVideo('pause')">⏸</button>
+                    <button class="btn danger" onclick="controlVideo('stop')">⏹</button>
+                    <input type="range" id="video-seeker" min="0" max="100" step="0.1" value="0" style="flex:1;" oninput="controlVideo('seek', this.value)" onmousedown="isSeeking=true" onmouseup="isSeeking=false">
+                    <span id="video-time-display">00:00</span>
+                </div>
+
+                <details class="tool-group">
+                    <summary>
+                        <span class="group-label">🎵 Local Background Music</span>
+                        <span class="hint">(Click to expand)</span>
+                    </summary>
+
+                    <div class="tool-body">
+                        <div class="row">
+                            <select id="saved-music-select" class="login-input" style="flex:1;" onchange="window.loadSavedMusic(this.value)">
+                                <option value="">-- Select Saved Music --</option>
+                            </select>
+                            <button class="btn danger" onclick="window.deleteSavedMusic()" title="Delete Selected">🗑️</button>
+                        </div>
+
+                        <input type="text" id="local-audio-url" class="login-input" placeholder="Paste MP3 URL or YouTube ID">
+
+                        <div class="row">
+                            <input type="text" id="local-audio-name" class="login-input" style="flex:1;" placeholder="Music Name (to save)">
+                            <button class="btn soft" onclick="window.saveLocalMusic()">💾 Save</button>
+                        </div>
+
+                        <div class="row">
+                            <button class="btn success" style="flex:1;" onclick="window.controlLocalMusic('play')">▶ Play</button>
+                            <button class="btn danger" style="flex:1;" onclick="window.controlLocalMusic('stop')">⏹ Stop</button>
+                        </div>
+
+                        <div class="row">
+                            <button id="btn-local-mute" class="btn" style="padding:4px 10px; font-size:1.1rem;" onclick="window.toggleLocalMute()" title="Mute/Unmute">🔊</button>
+                            <input type="range" id="local-volume" min="0" max="100" value="100" style="flex:1;" oninput="window.setLocalVolume(this.value)">
+                        </div>
+
+                        <audio id="local-mp3-player" style="display:none;" loop></audio>
+                        <div id="local-yt-audio-container" style="display:none; width:1px; height:1px; opacity:0;">
+                            <div id="local-yt-audio-element"></div>
+                        </div>
+                    </div>
+                </details>
+
+                <div id="notification-box">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:1.2rem;">📢</span>
+                        <span id="notif-text">Message</span>
+                    </div>
+                    <button class="btn" onclick="acknowledgeMessage()">Ack</button>
+                </div>
+
+                <div id="gallery-search-container" style="display:none;">
+                    <input type="text" id="gallery-search" class="styled-input" placeholder="🔍 Search Local Media..." onkeyup="filterGallery()">
+                </div>
+
+                <div id="lyrics-grid">
+                    <div class="empty-hint">Select a LIVE song to begin.</div>
+                </div>
+
+                <div class="nav-bar">
+                    <button class="btn" onclick="navigatePart(-1)">‹ Previous</button>
+                    <span id="current-song-title">No Song Selected</span>
+                    <button class="btn primary" onclick="navigatePart(1)">Next ›</button>
+                </div>
+            </div>
+
+            <div id="right-pane">
+                <div class="clock-card">
+                    <div id="timer">00:00</div>
+                    <div id="passcode-display">PIN: --</div>
+                </div>
+
+                <div class="pane-section">
+                    <div class="group-label">Alignment</div>
+                    <div class="control-row">
+                        <button class="btn" id="btnAlignLeft" style="flex:1" onclick="setTextAlign('left')">Left</button>
+                        <button class="btn active" id="btnAlignCenter" style="flex:1" onclick="setTextAlign('center')">Center</button>
+                    </div>
+                </div>
+
+                <div class="pane-section">
+                    <div class="group-label">Font Family</div>
+                    <select id="fontFamily" onchange="updateFont(this.value)">
+                        <option value="'Inter', sans-serif">Inter (Modern Clean)</option>
+                        <option value="'Roboto', sans-serif">Roboto (Android Standard)</option>
+                        <option value="'Montserrat', sans-serif">Montserrat (Wide & Bold)</option>
+                        <option value="'Poppins', sans-serif">Poppins (Friendly Round)</option>
+                        <option value="'Oswald', sans-serif">Oswald (Tall & Condensed)</option>
+                        <option value="'Bebas Neue', sans-serif">Bebas Neue (Heavy Impact)</option>
+                        <option value="'Playfair Display', serif">Playfair (Elegant Serif)</option>
+                        <option value="'JetBrains Mono', monospace">JetBrains (Typewriter)</option>
+                    </select>
+                </div>
+
+                <div class="pane-section">
+                    <div class="group-label">Background Color</div>
+                    <div class="color-grid">
+                        <div class="color-dot active" style="background:#000000;" onclick="setBgColor('black', this)"></div>
+                        <div class="color-dot" style="background:#1e293b;" onclick="setBgColor('#1e293b', this)"></div>
+                        <div class="color-dot" style="background:#2563eb;" onclick="setBgColor('#2563eb', this)"></div>
+                        <div class="color-dot" style="background:#dc2626;" onclick="setBgColor('#dc2626', this)"></div>
+                        <div class="color-dot" style="background:#ffffff;" onclick="setBgColor('white', this)"></div>
+                    </div>
+
+                    <div style="display:none;">
+                        <input type="file" id="fileInput" accept="image/*,video/mp4,video/webm" onchange="uploadBgImage(this)">
+                        <button class="btn" onclick="document.getElementById('fileInput').click()">🌌 Upload BG Media</button>
+                        <button class="btn danger" onclick="clearBgImage()">Remove Image</button>
+                    </div>
+                </div>
+
+                <div class="pane-section">
+                    <div class="group-label">Media & Library Loader</div>
+                    <div class="stack">
+                        <button class="btn success" style="width:100%;" onclick="loadLiveSongs()">⚡ Refresh Live Songs</button>
+
+                        <input type="file" id="localMediaInput" multiple accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" style="display:none;" onchange="handleLocalMedia(this)">
+                        <button class="btn soft" style="width:100%;" onclick="document.getElementById('localMediaInput').click()">📁 Add Local Files</button>
+
+                        <button class="btn yt" style="width:100%;" onclick="addYouTubeLink()">📺 Add YouTube URL</button>
+
+                        <button class="btn amber" style="width:100%;" onclick="openNoteEditor()">📝 Add Big Note</button>
+                    </div>
+                </div>
+
+                <div class="pane-section">
+                    <div class="group-label">Canvas Font Size: <span id="size-val" class="range-value">95</span></div>
+                    <input type="range" min="30" max="150" value="95" oninput="updateFontSize(this.value)">
+
+                    <div class="group-label" style="margin-top:18px;">Lyrics Box Size: <span id="card-size-val" class="range-value">150</span>px</div>
+                    <input type="range" id="card-size-slider" min="80" max="300" value="150" oninput="updateCardSize(this.value)">
+                </div>
+
+                <div class="pane-spacer"></div>
+
+                <div class="pane-section">
+                    <div class="group-label">Broadcast</div>
+                    <div class="stack">
+                        <button id="btnLaunch" class="btn soft" style="display:none;" onclick="launchAudience()">🚀 Launch Audience View</button>
+                        <button id="btnBlackout" class="btn dark" style="width:100%; padding:12px;" onclick="toggleBlackout()">🔴 SCREEN OFF</button>
+                        <button class="btn danger" style="width:100%" onclick="logoutUser()">🔒 Log Off</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ EDITOR ══ -->
+        <div id="view-editor" style="display:none;">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3 class="sidebar-title">Archive Library</h3>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn" style="flex:1;" onclick="createNewSong()">➕ New</button>
+                        <button class="btn btn-refresh primary" style="flex:1;" onclick="loadEditorSongList()">🔄 Sync Drive</button>
+                    </div>
+
+                    <input type="text" id="editorSearch" placeholder="🔍 Search Archive..." onkeyup="filterEditorList()" style="margin-top:10px;">
+                    <div id="editorListLoader" style="display:none; text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:10px;">Loading Drive...</div>
+                </div>
+                <div id="editor-song-list" class="song-list-container"></div>
+            </div>
+
+            <div id="editor-scroll">
+                <div class="editor-container">
+                    <h1>Song Editor (Archive)</h1>
+                    <div class="meta-grid">
+                        <div class="form-group">
+                            <label>Song Title (Filename)</label>
+                            <input type="text" id="edit-title" placeholder="e.g., Jesus Loves You">
+                        </div>
+                        <div class="form-group">
+                            <label>Author / Key</label>
+                            <input type="text" id="edit-author" placeholder="e.g., John 3:16">
+                        </div>
+                    </div>
+
+                    <div id="parts-container"></div>
+
+                    <button class="btn dashed" style="width:100%; margin-top:6px; padding:12px;" onclick="addPart()">+ Add New Slide</button>
+
+                    <div class="save-section">
+                        <label>📥Save to G-Storage</label>
+                        <div class="save-row">
+                            <label>
+                                <input type="checkbox" id="overwrite" checked> Overwrite if file exists
+                            </label>
+                            <button class="btn success" onclick="saveToDrive()">
+                                <span id="btnText">📥Save to G-Storage</span>
+                                <span id="spinner" class="loader">⏳</span>
+                            </button>
+                        </div>
+                        <div id="statusMsg" style="text-align:center; font-weight:600;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ LIBRARY ══ -->
+        <div id="view-library" style="display:none; flex:1; overflow:hidden;">
+            <div class="lib-panel">
+                <div class="lib-head">
+                    <div class="lib-head-row">
+                        <div class="lib-title">💽 G-Storage</div>
+                        <button class="btn xs" onclick="refreshLibraryDrive()">🔄 Refresh</button>
+                    </div>
+                    <input type="text" id="driveSearch" placeholder="🔍 Search Archive..." onkeyup="filterDriveList()">
+                </div>
+                <div id="lib-drive-list" class="lib-list">
+                    <div class="lib-empty">Click Refresh to load Archive</div>
+                </div>
+            </div>
+
+            <div class="lib-arrow">➡</div>
+
+            <div class="lib-panel">
+                <div class="lib-head live">
+                    <div class="lib-title">🔥 Worship (Live Songs)</div>
+                    <div id="live-count">0 Songs Live</div>
+                </div>
+                <div id="lib-firebase-list" class="lib-list">
+                    <div class="lib-empty">Listening for live data...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="render-container">
+        <canvas id="broadcastCanvas" width="1920" height="1080"></canvas>
+    </div>
+
+    <datalist id="section-types">
+        <option value="Verse 1"><option value="Verse 2"><option value="Verse 3"><option value="Verse 4">
+        <option value="Verse 5"><option value="Verse 6"><option value="Verse 7"><option value="Verse 8"><option value="Verse 9">
+        <option value="Chorus"><option value="Chorus 2"><option value="Chorus 3"><option value="Chorus 4">
+        <option value="Pre-Chorus"><option value="Bridge"><option value="Tag"><option value="Intro"><option value="Outro"><option value="Refrain">
+    </datalist>
+
+    <script>
+        // CONFIGURATION & PASSWORD TOGGLE
+        function togglePassword() {
+            const passwordInput = document.getElementById("loginPass");
+            const eyePath = document.getElementById("eyePath");
+            const eyePathOuter = document.getElementById("eyePathOuter");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyePath.setAttribute("d", "M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L4.573 4.572m14.854 14.854L14.12 14.121M21.543 12c-1.274 4.057-5.064 7-9.542 7-1.157 0-2.26-.205-3.284-.579l-1.88-1.88m14.707-14.543L19.542 5.01A9.969 9.969 0 0121.543 12zM12 5c4.478 0 8.268 2.943 9.542 7a9.968 9.968 0 01-1.216 2.536L18.464 12.68");
+                eyePathOuter.setAttribute("d", "");
+            } else {
+                passwordInput.type = "password";
+                eyePath.setAttribute("d", "M15 12a3 3 0 11-6 0 3 3 0 016 0z");
+                eyePathOuter.setAttribute("d", "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z");
+            }
+        }
+
+        // COLOUR THEME SWITCHER (remembered in this browser)
+        (function () {
+            const root = document.documentElement;
+            function apply(t) {
+                root.setAttribute('data-theme', t);
+                document.querySelectorAll('.theme-dot').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+            }
+            apply(root.getAttribute('data-theme') || 'indigo');
+            document.getElementById('theme-switch').addEventListener('click', function (e) {
+                const b = e.target.closest('.theme-dot');
+                if (!b) return;
+                apply(b.dataset.theme);
+                try { localStorage.setItem('worship-theme', b.dataset.theme); } catch (err) {}
+            });
+        })();
+    </script>
+
+    <script type="module" src="app.js"></script>
+
+    <!-- ══ BIG NOTE MODAL ══ -->
+    <div id="note-modal" style="display:none;">
+        <div class="modal-card">
+            <h2 id="note-modal-title">Create Big Note</h2>
+            <input type="hidden" id="note-id">
+
+            <div class="field">
+                <div class="field-label">Title / Label</div>
+                <input type="text" id="note-title" class="styled-input" placeholder="e.g., Opening Prayer" onkeyup="previewBigNote()">
+            </div>
+
+            <div class="field">
+                <div class="field-label">Note Text</div>
+                <textarea id="note-text" class="styled-input" placeholder="Type your announcement here..." onkeyup="previewBigNote()"></textarea>
+            </div>
+
+            <div class="field">
+                <div class="field-label">Background (From Gallery)</div>
+                <select id="note-bg" class="styled-input" onchange="previewBigNote()">
+                    <option value="">-- None (Use Global Background) --</option>
+                </select>
+            </div>
+
+            <div class="modal-row">
+                <div>
+                    <div class="field-label">Font Size: <span id="note-size-val" class="range-value">95</span>px</div>
+                    <input type="range" id="note-size" min="30" max="200" value="95" oninput="document.getElementById('note-size-val').innerText=this.value; previewBigNote()">
+                </div>
+                <div>
+                    <div class="field-label">BG Darken: <span id="note-dim-val" class="range-value">40</span>%</div>
+                    <input type="range" id="note-dim" min="0" max="100" value="40" oninput="document.getElementById('note-dim-val').innerText=this.value; previewBigNote()">
+                </div>
+            </div>
+
+            <div class="modal-row" style="margin-bottom:22px;">
+                <div>
+                    <div class="field-label">Horizontal: <span id="note-x-val" class="range-value">50</span>%</div>
+                    <input type="range" id="note-x" min="10" max="90" value="50" oninput="document.getElementById('note-x-val').innerText=this.value; previewBigNote()">
+                </div>
+                <div>
+                    <div class="field-label">Vertical: <span id="note-y-val" class="range-value">50</span>%</div>
+                    <input type="range" id="note-y" min="10" max="90" value="50" oninput="document.getElementById('note-y-val').innerText=this.value; previewBigNote()">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn danger" onclick="document.getElementById('note-modal').style.display='none'">Cancel</button>
+                <button class="btn success" onclick="saveBigNote()">💾 Save Note</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
