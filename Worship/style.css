@@ -324,8 +324,15 @@ textarea.slide-input:focus { box-shadow: none; }
 .lib-empty { padding: 24px; text-align: center; color: #a1a1aa; }
 .lib-arrow { width: 44px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 1.4rem; color: var(--accent); opacity: 0.5; }
 
-#lib-drive-list div, #lib-firebase-list div { padding: 7px 12px !important; font-size: 0.8rem !important; border-radius: 10px; transition: background 0.2s; }
-#lib-drive-list div:hover, #lib-firebase-list div:hover { background: var(--highlight) !important; }
+#lib-drive-list div:not(.lib-empty), #lib-firebase-list div:not(.lib-empty) { padding: 7px 12px !important; font-size: 0.8rem !important; border-radius: 10px; transition: background 0.2s; }
+#lib-drive-list div:not(.lib-empty):hover, #lib-firebase-list div:not(.lib-empty):hover { background: var(--highlight) !important; }
+
+/* Live-song rows built by presenter.js */
+.lib-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--border); background: #fff; }
+.lib-item:hover { border-color: rgba(var(--accent-rgb), 0.45); }
+.lib-item .btn { flex-shrink: 0; white-space: nowrap; }
+.lib-item-title { font-weight: 600; color: var(--text-color); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn.is-muted { color: var(--danger); border-color: rgba(220, 38, 38, 0.4); background: #FEF2F2; }
 #lib-drive-list .btn, #lib-firebase-list .btn { padding: 4px 10px !important; font-size: 0.72rem !important; }
 
 /* ============================================================
