@@ -331,6 +331,7 @@
         import { getDatabase, ref, set, push, onValue, remove, get, query, limitToLast, onDisconnect, child, serverTimestamp as rtdbTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         // ✅ ADDED FIRESTORE (Required for Tracker)
         import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { logLogin } from "./login-log.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
@@ -459,12 +460,16 @@
             }
         };
 
-        // ==========================================
+// ==========================================
         // 5. LOGIN TRACKER (Auto-Update Last Seen)
         // ==========================================
         // --- TRACKER FIX APPLIED ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                // --- NEW: LOG LOGIN EVENT ---
+                logLogin(db, user.uid, "Presentation Desktop Suite");
+
+                // Update the lastLogin timestamp in Firestore
                 updateDoc(doc(firestore, "users", user.uid), {
                     lastLogin: serverTimestamp()
                 }).then(() => {
