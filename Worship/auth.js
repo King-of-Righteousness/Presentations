@@ -52,7 +52,7 @@ export function initAuth() {
         });
     });
 
-    // AUTH STATE & SESSION TRACKER
+// AUTH STATE & SESSION TRACKER
     onAuthStateChanged(auth, async (user) => {
         const overlay = document.getElementById('login-overlay');
         const appContainer = document.getElementById('app-container');
@@ -88,6 +88,11 @@ export function initAuth() {
 
                     const ALLOWED_ACCESS = ['admin', 'presenter1', 'presenter2', 'presenter3'];
                     if (userRoles.some(r => ALLOWED_ACCESS.includes(r))) {
+                        
+                        // --- NEW: LOG LOGIN EVENT ---
+                        // Triggers only after the user is fully confirmed and allowed
+                        logLogin(db, user.uid, "Worship Desktop Suite");
+
                         const token = await user.getIdToken();
                         localStorage.setItem('korAdminKey', token);
                         
@@ -135,11 +140,10 @@ export function initAuth() {
             }
         } else {
             // User Logged Out
-            if (sessionRef) remove(sessionRef);
+            if (typeof sessionRef !== 'undefined' && sessionRef) remove(sessionRef);
             overlay.style.display = 'flex';
             appContainer.style.opacity = '0';
             appContainer.style.pointerEvents = 'none';
             btn.textContent = "Log In"; btn.disabled = false;
         }
     });
-}
