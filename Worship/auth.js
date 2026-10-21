@@ -2,6 +2,7 @@ import { auth, firestore, db } from './firebase-config.js';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { ref, set, remove, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { logLogin } from "./login-log.js";
 
 // --- GLOBAL SESSION VARIABLES ---
 let currentSessionId = null;
