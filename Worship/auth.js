@@ -41,7 +41,8 @@ const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchsta
 activityEvents.forEach(evt => document.addEventListener(evt, resetIdleTimer));
 
 // 4. AUTH STATE LISTENER (🔥 UPDATED FOR MULTI-ROLE & LOGGING)
-const overlay = document.getElementById('securityOverlay');
+const overlay = document.getElementById('login-overlay'); // FIXED: Matches your HTML ID
+const appContainer = document.getElementById('app-container'); // NEW: Target the main app wrapper
 const statusMsg = document.getElementById('loginMsg');
 
 onAuthStateChanged(window.auth, async (user) => {
@@ -100,7 +101,12 @@ onAuthStateChanged(window.auth, async (user) => {
         setTimeout(() => window.logout(true), 5000);
     }
   } else {
+    // Re-lock the UI on logout
     if (overlay) overlay.style.display = 'flex';
+    if (appContainer) {
+        appContainer.style.opacity = '0';
+        appContainer.style.pointerEvents = 'none';
+    }
   }
 });
 
@@ -145,7 +151,15 @@ if (logoutBtn) logoutBtn.addEventListener('click', () => window.logout(false));
 
 // 7. HELPER: UNLOCK & ROLE UI RESTRICTIONS
 function unlockDashboard(roles) {
+    // Hide login screen
     if (overlay) overlay.style.display = 'none';
+    
+    // Reveal main application
+    if (appContainer) {
+        appContainer.style.opacity = '1';
+        appContainer.style.pointerEvents = 'all';
+    }
+    
     resetIdleTimer();
 
     const isAdmin = roles.includes('admin');
@@ -155,33 +169,3 @@ function unlockDashboard(roles) {
 
     if(window.initApp) window.initApp();
 }
-
-// --- HYBRID EXPORTS ---
-window.firebaseSaveSetlistConfig = (playlist) => {
-    const r = ref(db, 'library/configs/arrange_songs');
-    return set(r, { playlist: playlist, updatedAt: serverTimestamp() });
-};
-
-window.firebasePublishSong = (song) => {
-    if(!song.id) song.id = 'song_' + Math.random().toString(36).substr(2, 9);
-    song.isPublic = true; 
-    const r = ref(db, 'library/songs/' + song.id);
-    return set(r, song);
-};
-
-window.pushSongToFirebase = (songId, songData) => {
-    return set(ref(db, 'presentation/live_edit'), {
-        songId: songId,
-        data: songData,
-        timestamp: serverTimestamp()
-    });
-};
-
-window.signalLibraryUpdate = (action) => {
-    return set(ref(db, 'presentation/library_signal'), {
-        action: action,
-        timestamp: serverTimestamp()
-    });
-};
-
-console.log("🔥 Firebase Hybrid Library & Auth Active");
