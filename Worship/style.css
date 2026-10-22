@@ -147,8 +147,19 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .sidebar-header .btn { white-space: nowrap; padding: 9px 10px; }
 
 .live-label { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--success); margin-bottom: 10px; }
-.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: livePulse 1.8s ease-in-out infinite; }
-@keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.5); } 70%, 100% { box-shadow: 0 0 0 8px rgba(5, 150, 105, 0); } }
+.live-dot { 
+    width: 8px; 
+    height: 8px; 
+    border-radius: 50%; 
+    background: var(--success); 
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.25);
+    animation: livePulse 2s ease-in-out infinite; 
+    will-change: transform;
+}
+@keyframes livePulse { 
+    0%, 100% { transform: scale(1); } 
+    50% { transform: scale(1.25); } 
+}
 
 .song-list-container { overflow-y: auto; flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
 .song-item {
