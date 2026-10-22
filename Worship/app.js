@@ -1,11 +1,8 @@
-import { initAuth } from './auth.js';
 // We import these for their side-effects (registering window functions)
+import './auth.js';
 import './bible.js';
 import './editor.js';
 import './presenter.js';
-
-// Initialize Authentication
-initAuth();
 
 // Initialize SQL.js for the Bible Manager
 window.onload = async function() {
