@@ -167,5 +167,11 @@ function unlockDashboard(roles) {
         console.log("🛡️ Standard Mode: Hiding Admin Controls");
     }
 
-    if(window.initApp) window.initApp();
+    // --- THE FIX: START THE PRESENTER ENGINE ---
+    // This replaces "window.initApp()" and actually boots up the data fetcher
+    if (window.startNewSession) {
+        window.startNewSession(false);
+    } else {
+        console.error("Warning: presenter.js has not finished loading.");
+    }
 }
