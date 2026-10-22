@@ -108,8 +108,15 @@ onAuthStateChanged(window.auth, async (user) => {
 const loginBtn = document.getElementById('loginBtn');
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
-      const email = document.getElementById('loginEmail').value;
+      const email = document.getElementById('loginEmail').value.trim();
       const pass = document.getElementById('loginPass').value;
+      
+      // Stop empty submissions before they hit Firebase
+      if (!email || !pass) {
+          statusMsg.innerText = "Please enter both email and password.";
+          statusMsg.style.color = "var(--danger)";
+          return;
+      }
       
       loginBtn.innerText = "Verifying...";
       statusMsg.innerText = "";
