@@ -18,32 +18,16 @@
     </script>
     
     <style>
-        /* 1. Static placeholder to maintain layout spacing */
+        /* Clean, completely static logo with a soft shadow */
         .korLogo {
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 40px; 
-            height: 40px;
             margin: 0 auto;
-            pointer-events: none !important;
         }
         
-        /* 2. Flawless GPU-Accelerated Pulse (Zero CPU Repaints) */
         .korLogo img {
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            will-change: transform;
-            animation: smooth-pulse 2.5s infinite alternate ease-in-out;
-            pointer-events: none;
-            /* Static shadow looks great and scales naturally without causing input lag */
             box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-        }
-        
-        /* 3. Animating ONLY scale, which is fully GPU-accelerated */
-        @keyframes smooth-pulse {
-            0% { transform: scale(1) translateZ(0); }
-            100% { transform: scale(1.1) translateZ(0); }
         }
     </style>
     
