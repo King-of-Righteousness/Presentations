@@ -75,7 +75,7 @@ onAuthStateChanged(window.auth, async (user) => {
                  console.log(`✅ Welcome ${data.displayName || user.email} [${userRoles.join(', ')}]`);
                  
                  // --- LOG LOGIN EVENT & FIRESTORE TRACKER ---
-                 logLogin(db, user.uid, "Worship Editor Suite (Lyrics|Chords)");
+                 logLogin(firestore, user.uid, "Worship Editor Suite (Lyrics|Chords)");
                  
                  updateDoc(doc(firestore, "users", user.uid), {
                      lastLogin: firestoreTimestamp()
