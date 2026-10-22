@@ -400,8 +400,7 @@ textarea.slide-input:focus { box-shadow: none; }
 .login-head { margin-bottom: 28px; }
 .login-head h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-color); margin: 0; }
 .login-sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 600; margin: 6px 0 0; }
-@keyframes korPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(var(--accent-rgb), 0); } 50% { transform: scale(1.05); box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.45); } }
-.korLogo { width: 68px; height: 68px; border-radius: 20px; background: var(--surface); display: grid; place-items: center; border: 1px solid var(--border); box-shadow: var(--shadow-md); animation: korPulse 3s ease-in-out infinite; margin: 0 auto 1.25rem; }
+.korLogo { width: 68px; height: 68px; border-radius: 20px; background: var(--surface); display: grid; place-items: center; border: 1px solid var(--border); box-shadow: var(--shadow-md); margin: 0 auto 1.25rem; pointer-events: none; }
 .login-input-group { text-align: left; margin-bottom: 16px; }
 .login-label { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; }
 .login-field-container { position: relative; }
