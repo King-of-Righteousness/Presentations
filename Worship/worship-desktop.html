@@ -16,6 +16,18 @@
         try { document.documentElement.setAttribute('data-theme', localStorage.getItem('worship-theme') || 'indigo'); }
         catch (e) { document.documentElement.setAttribute('data-theme', 'indigo'); }
     </script>
+    <style>
+    /* Clean pulse and glow animation for the login logo */
+    .korLogo img {
+        animation: pulse-glow 2.5s infinite ease-in-out;
+    }
+    
+    @keyframes pulse-glow {
+        0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+        50% { transform: scale(1.08); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
+        100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+    }
+</style>
 </head>
 <body>
 
