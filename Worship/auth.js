@@ -136,8 +136,9 @@ if (loginBtn) {
 }
 
 // 6. LOGOUT ACTION
-window.logout = (force = false) => {
-    if (force || confirm("Are you sure you want to log off?")) {
+// FIXED: We now declare both window.logout and window.logoutUser to match your HTML
+window.logoutUser = window.logout = (force = false) => {
+    if (force === true || confirm("Are you sure you want to log off?")) {
         signOut(window.auth).then(() => {
              window.location.reload(); 
         }).catch((error) => {
