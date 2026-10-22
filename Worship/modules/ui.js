@@ -475,7 +475,25 @@ export function updateBlackoutButton() {
     btn.classList.toggle('success', !state.isBlackout);
 }
 
-export function startTimer() { let s=0; setInterval(() => { s++; const el = document.getElementById('timer'); if(el) el.innerText = new Date(s * 1000).toISOString().substr(14, 5); }, 1000); }
+let sessionTimerInterval = null; // Store the timer ID
+
+export function startTimer() { 
+    let s = 0; 
+    
+    // THE FIX: Clear any existing timers so they don't stack up and count too fast
+    if (sessionTimerInterval) {
+        clearInterval(sessionTimerInterval);
+    }
+    
+    // Reset the display to 00:00 immediately
+    const el = document.getElementById('timer');
+    if (el) el.innerText = "00:00";
+    
+    sessionTimerInterval = setInterval(() => { 
+        s++; 
+        if(el) el.innerText = new Date(s * 1000).toISOString().substr(14, 5); 
+    }, 1000); 
+}
 
 export const updateCardSize = (val) => {
     const size = parseInt(val);
