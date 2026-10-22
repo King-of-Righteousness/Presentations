@@ -18,21 +18,34 @@
     </script>
     
 <style>
-    /* Force smooth animation and block mouse-tracking / hover jitter */
+    /* 1. Lock the container size so it never shifts the layout */
     .korLogo {
-        pointer-events: none; /* Stops the mouse from interacting with the logo */
+        pointer-events: none !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 42px; 
+        height: 42px;
+        margin: 0 auto;
     }
     
+    /* 2. Force Hardware Acceleration (GPU) to stop cursor/click jitter */
     .korLogo img {
-        animation: pulse-glow 2.5s infinite ease-in-out !important;
-        transition: none !important; /* Kills any conflicting mouse-move transition effects */
-        transform-origin: center center;
+        animation: pulse-glow 3s infinite alternate ease-in-out !important;
+        will-change: transform, filter !important; /* This moves it to the GPU */
+        pointer-events: none !important;
     }
     
+    /* 3. Smoother 2-step animation using alternate playback */
     @keyframes pulse-glow {
-        0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
-        50% { transform: scale(1.08); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
-        100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+        0% { 
+            transform: scale(1); 
+            filter: drop-shadow(0px 0px 0px rgba(255,255,255,0)); 
+        }
+        100% { 
+            transform: scale(1.1); 
+            filter: drop-shadow(0px 0px 10px rgba(255,255,255,0.3)); 
+        }
     }
 </style>
     
